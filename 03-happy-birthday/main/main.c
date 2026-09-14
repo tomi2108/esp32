@@ -1,9 +1,9 @@
 #include "driver/gpio.h"
-#include "driver/i2c_master.h"
 #include "driver/ledc.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/projdefs.h"
 #include "freertos/task.h"
+#include "lcd.h"
 
 #define BUTTON_GPIO GPIO_NUM_4
 #define BUZZER_GPIO GPIO_NUM_16
@@ -11,10 +11,6 @@
 
 #define LCD_SDA GPIO_NUM_21
 #define LCD_SCL GPIO_NUM_22
-#define LCD_ADDR 0x27
-#define LCD_BACKLIGHT 0x08
-#define LCD_ENABLE 0x04
-#define LCD_REG_SELECT 0x01
 
 #define NOTE_C4 262
 #define NOTE_CS4 277
@@ -112,85 +108,10 @@ void buzzer_tone(int frequency) {
   ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 512);
   ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
 }
+
 void buzzer_stop(void) {
   ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 0);
   ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
-}
-
-void lcd_write_byte(uint8_t data) {
-  i2c_master_transmit(lcd_dev, &data, 1, -1);
-}
-
-void lcd_pulse_enable(uint8_t data) {
-  lcd_write_byte(data | LCD_ENABLE);
-  esp_rom_delay_us(1);
-  lcd_write_byte(data & ~LCD_ENABLE);
-  esp_rom_delay_us(50);
-}
-
-void lcd_write_nibble(uint8_t nibble, uint8_t control) {
-  uint8_t data = (nibble & 0xF0) | control | LCD_BACKLIGHT;
-  lcd_pulse_enable(data);
-}
-
-void lcd_send(uint8_t value, uint8_t control) {
-  lcd_write_nibble(value & 0xF0, control);
-  lcd_write_nibble((value << 4) & 0xF0, control);
-}
-
-void lcd_command(uint8_t command) { lcd_send(command, 0); }
-void lcd_data(uint8_t data) { lcd_send(data, LCD_REG_SELECT); }
-void lcd_clear(void) {
-  lcd_command(0x01);
-  vTaskDelay(pdMS_TO_TICKS(2));
-}
-void lcd_set_cursor(uint8_t row, uint8_t column) {
-  uint8_t address;
-  if (row == 0)
-    address = 0x00 + column;
-  else if (row == 1)
-    address = 0x40 + column;
-  else
-    return;
-
-  lcd_command(0x80 | address);
-}
-void lcd_print(const char *text) {
-  while (*text)
-    lcd_data((uint8_t)*text++);
-}
-
-void lcd_init(void) {
-  i2c_master_bus_config_t bus_config = {
-      .i2c_port = I2C_NUM_0,
-      .sda_io_num = LCD_SDA,
-      .scl_io_num = LCD_SCL,
-      .clk_source = I2C_CLK_SRC_DEFAULT,
-      .glitch_ignore_cnt = 7,
-      .flags.enable_internal_pullup = true,
-  };
-  i2c_device_config_t dev_config = {
-      .dev_addr_length = I2C_ADDR_BIT_LEN_7,
-      .device_address = LCD_ADDR,
-      .scl_speed_hz = 100000,
-  };
-  i2c_new_master_bus(&bus_config, &i2c_bus);
-  i2c_master_bus_add_device(i2c_bus, &dev_config, &lcd_dev);
-
-  vTaskDelay(pdMS_TO_TICKS(50));
-  lcd_write_nibble(0x30, 0);
-  esp_rom_delay_us(150);
-  lcd_write_nibble(0x30, 0);
-  esp_rom_delay_us(150);
-  lcd_write_nibble(0x30, 0);
-  esp_rom_delay_us(150);
-
-  lcd_write_nibble(0x20, 0);
-
-  lcd_command(0x28);
-  lcd_command(0x0C);
-  lcd_command(0x06);
-  lcd_clear();
 }
 
 int default_message;
@@ -199,28 +120,28 @@ void lcd_default_message() {
   if (default_message)
     return;
   default_message = 1;
-  lcd_clear();
-  lcd_set_cursor(0, 0);
-  lcd_print("No tocar");
-  lcd_set_cursor(1, 0);
-  lcd_print("Excepto Rochi :)");
+  lcd_clear(lcd_dev);
+  lcd_set_cursor(lcd_dev, 0, 0);
+  lcd_print(lcd_dev, "No tocar");
+  lcd_set_cursor(lcd_dev, 1, 0);
+  lcd_print(lcd_dev, "Excepto Rochi :)");
 }
 
 void lcd_on_message() {
   if (!default_message)
     return;
   default_message = 0;
-  lcd_clear();
-  lcd_set_cursor(0, 0);
-  lcd_print("Feliz cumplee!!!");
-  lcd_set_cursor(1, 0);
-  lcd_print("Te amo muchoo <3");
+  lcd_clear(lcd_dev);
+  lcd_set_cursor(lcd_dev, 0, 0);
+  lcd_print(lcd_dev, "Feliz cumplee!!!");
+  lcd_set_cursor(lcd_dev, 1, 0);
+  lcd_print(lcd_dev, "Te amo muchoo <3");
 }
 
 void app_main(void) {
   leds_init();
   buzzer_init();
-  lcd_init();
+  lcd_init(&i2c_bus, &lcd_dev, LCD_SDA, LCD_SCL);
   lcd_default_message();
 
   int tempo = 140;
