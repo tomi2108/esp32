@@ -1,7 +1,6 @@
 #include "melody.h"
-#include <stdlib.h>
 
-Note melody[] = {
+Note happy_birthday[] = {
     {NOTE_C4, QUARTER},   {NOTE_C4, EIGHTH},    {NOTE_D4, D_QUARTER},
     {NOTE_C4, D_QUARTER}, {NOTE_F4, D_QUARTER}, {NOTE_E4, D_HALF},
     {NOTE_C4, QUARTER},   {NOTE_C4, EIGHTH},    {NOTE_D4, D_QUARTER},
@@ -14,9 +13,9 @@ Note melody[] = {
 };
 
 uint32_t melody_happy_birthday(Note **out) {
-  int count = sizeof(melody) / sizeof(Note);
+  int count = sizeof(happy_birthday) / sizeof(Note);
   if (out != NULL)
-    *out = melody;
+    *out = happy_birthday;
   return count;
 }
 

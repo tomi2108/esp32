@@ -15,9 +15,6 @@
 #define LCD_SDA GPIO_NUM_21
 #define LCD_SCL GPIO_NUM_22
 
-static i2c_master_bus_handle_t i2c_bus;
-static i2c_master_dev_handle_t lcd_dev;
-
 int ledPins[LEDS] = {
     GPIO_NUM_32,
     GPIO_NUM_33,
@@ -42,35 +39,31 @@ void leds_stop() {
 
 int default_message;
 
-void lcd_default_message() {
+void lcd_default_message(LCD lcd) {
   if (default_message)
     return;
   default_message = 1;
-  lcd_clear(lcd_dev);
-  lcd_set_cursor(lcd_dev, 0, 0);
-  lcd_print(lcd_dev, "No tocar");
-  lcd_set_cursor(lcd_dev, 1, 0);
-  lcd_print(lcd_dev, "Excepto Rochi :)");
+  lcd_clear(lcd);
+  lcd_print_line(lcd, 0, "No tocar");
+  lcd_print_line(lcd, 1, "Excepto Rochi :)");
 }
 
-void lcd_on_message() {
+void lcd_on_message(LCD lcd) {
   if (!default_message)
     return;
   default_message = 0;
-  lcd_clear(lcd_dev);
-  lcd_set_cursor(lcd_dev, 0, 0);
-  lcd_print(lcd_dev, "Feliz cumplee!!!");
-  lcd_set_cursor(lcd_dev, 1, 0);
-  lcd_print(lcd_dev, "Te amo muchoo <3");
+  lcd_clear(lcd);
+  lcd_print_line(lcd, 0, "Feliz cumplee!!!");
+  lcd_print_line(lcd, 1, "Te amo muchoo <3");
 }
 
 int wholenote = (60000 * 4) / 140;
 void app_main(void) {
   leds_init();
-  buzzer_init(BUZZER_GPIO);
+  PassiveBuzzer buzzer = passive_buzzer_init(BUZZER_GPIO);
 
-  lcd_init(&i2c_bus, &lcd_dev, LCD_SDA, LCD_SCL);
-  lcd_default_message();
+  LCD lcd = lcd_init(LCD_SDA, LCD_SCL);
+  lcd_default_message(lcd);
 
   Button button = button_init(BUTTON_GPIO);
   Note *melody = NULL;
@@ -78,18 +71,17 @@ void app_main(void) {
 
   while (1) {
     if (button_is_pressed(button)) {
-      lcd_on_message();
-
+      lcd_on_message(lcd);
       for (int i = 0; i < notes; i++) {
         Note note = melody[i];
-        uint32_t noteDuration = duration_to_ms(note.duration, wholenote);
+        uint32_t duration = duration_to_ms(note.duration, wholenote);
         leds_set(i % LEDS);
-        buzzer_tone_ms(note.note, noteDuration * 0.9);
-        vTaskDelay(pdMS_TO_TICKS(noteDuration * 0.1));
+        buzzer_set_frequency(&buzzer, note.frequency);
+        buzzer_tone_ms(buzzer, duration * 0.9);
+        vTaskDelay(pdMS_TO_TICKS(duration * 0.1));
       }
-
     } else {
-      lcd_default_message();
+      lcd_default_message(lcd);
       buzzer_stop();
       leds_stop();
     }

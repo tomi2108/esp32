@@ -41,7 +41,7 @@ typedef enum Duration {
 } Duration;
 
 typedef struct Note {
-  uint32_t note;
+  uint32_t frequency;
   Duration duration;
 } Note;
 
