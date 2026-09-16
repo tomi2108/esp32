@@ -60,12 +60,14 @@ void lcd_on_message(LCD lcd) {
 int wholenote = (60000 * 4) / 140;
 void app_main(void) {
   leds_init();
+
   PassiveBuzzer buzzer = passive_buzzer_init(BUZZER_GPIO);
 
   LCD lcd = lcd_init(LCD_SDA, LCD_SCL);
   lcd_default_message(lcd);
 
   Button button = button_init(BUTTON_GPIO);
+
   Note *melody = NULL;
   int notes = melody_happy_birthday(&melody);
 

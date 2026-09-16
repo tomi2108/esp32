@@ -42,12 +42,25 @@ void lcd_set_cursor(LCD lcd, uint8_t row, uint8_t column) {
 
 void lcd_print_line(LCD lcd, uint8_t row, const char *text) {
   lcd_set_cursor(lcd, row, 0);
-  while (*text)
+  int i = 0;
+  while (*text && i < lcd.columns) {
     lcd_data(lcd, (uint8_t)*text++);
+    i++;
+  }
+  while (i < lcd.columns) {
+    lcd_data(lcd, ' ');
+    i++;
+  }
 }
 
-LCD lcd_init(gpio_num_t sda, gpio_num_t scl) {
-  LCD lcd = {.sda = sda, .scl = scl};
+LCD lcd_init(uint8_t rows, uint8_t columns, gpio_num_t sda, gpio_num_t scl) {
+  LCD lcd = {
+      .sda = sda,
+      .scl = scl,
+      .columns = columns,
+      .rows = rows,
+  };
+
   i2c_master_bus_config_t bus_config = {
       .i2c_port = I2C_NUM_0,
       .sda_io_num = sda,
@@ -67,18 +80,24 @@ LCD lcd_init(gpio_num_t sda, gpio_num_t scl) {
   i2c_master_bus_add_device(lcd.bus, &dev_config, &lcd.device);
 
   vTaskDelay(pdMS_TO_TICKS(50));
+
+  lcd_write_nibble(lcd, 0x30, 0);
+  vTaskDelay(pdMS_TO_TICKS(5));
+
   lcd_write_nibble(lcd, 0x30, 0);
   esp_rom_delay_us(150);
-  lcd_write_nibble(lcd, 0x30, 0);
-  esp_rom_delay_us(150);
+
   lcd_write_nibble(lcd, 0x30, 0);
   esp_rom_delay_us(150);
 
   lcd_write_nibble(lcd, 0x20, 0);
+  vTaskDelay(pdMS_TO_TICKS(1));
 
   lcd_command(lcd, 0x28);
-  lcd_command(lcd, 0x0C);
-  lcd_command(lcd, 0x06);
+  lcd_command(lcd, 0x08);
   lcd_clear(lcd);
+  lcd_command(lcd, 0x06);
+  lcd_command(lcd, 0x0C);
+
   return lcd;
 }

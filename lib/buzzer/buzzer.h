@@ -14,4 +14,4 @@ PassiveBuzzer passive_buzzer_init(gpio_num_t gpio);
 void buzzer_set_frequency(PassiveBuzzer *buzzer, uint32_t frequency);
 void buzzer_tone(PassiveBuzzer buzzer);
 void buzzer_tone_ms(PassiveBuzzer buzzer, uint32_t ms);
-void buzzer_stop(void);
+void buzzer_stop();

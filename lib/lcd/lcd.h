@@ -21,4 +21,4 @@ typedef struct LCD {
 
 void lcd_clear(LCD lcd);
 void lcd_print_line(LCD lcd, uint8_t row, const char *text);
-LCD lcd_init(gpio_num_t sda, gpio_num_t scl);
+LCD lcd_init(uint8_t rows, uint8_t columns, gpio_num_t sda, gpio_num_t scl);
