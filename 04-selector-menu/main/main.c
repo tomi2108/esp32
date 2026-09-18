@@ -90,7 +90,6 @@ void on_select(void *context, int32_t value) {
 
 void app_main(void) {
   PassiveBuzzer buzzer = passive_buzzer_init(BUZZER_GPIO);
-
   Menu menu = {.options = options,
                .length = 4,
                .selected = 0,
