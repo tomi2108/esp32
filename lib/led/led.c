@@ -27,28 +27,26 @@ u_int8_t digits[10] = {
 };
 
 void led_display(LED led, u_int32_t n) {
-  int on = led.mode == COMMON_CATHODE;
+  static int j = 0;
+
   uint32_t divisor = 1;
-
-  for (int j = 0; j < led.digits; j++) {
-    uint8_t digit = (int)(n / divisor) % 10;
-
-    if (led.common_pins != NULL) {
-      for (int k = 0; k < led.digits; k++)
-        gpio_set_level(led.common_pins[k], on);
-    }
-
-    for (int i = 0; i < 8; i++) {
-      u_int8_t mask = digits[digit];
-      bool segment_on = mask & (1 << (7 - i));
-      gpio_set_level(led.data_pins[i], segment_on == on);
-    }
-
-    if (led.common_pins != NULL) {
-      gpio_set_level(led.common_pins[j], !on);
-    }
-
-    vTaskDelay(pdMS_TO_TICKS(2));
+  for (int i = 0; i < j; i++)
     divisor *= 10;
+
+  uint8_t digit = (n / divisor) % 10;
+  int on = led.mode == COMMON_CATHODE;
+
+  for (int k = 0; k < led.digits; k++)
+    gpio_set_level(led.common_pins[k], on);
+
+  uint8_t mask = digits[digit];
+
+  for (int i = 0; i < 8; i++) {
+    bool segment_on = mask & (1 << (7 - i));
+    gpio_set_level(led.data_pins[i], segment_on == on);
   }
+
+  gpio_set_level(led.common_pins[j], !on);
+
+  j = (j + 1) % led.digits;
 }
