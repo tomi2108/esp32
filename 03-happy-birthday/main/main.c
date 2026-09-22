@@ -9,7 +9,7 @@
 #include <stdint.h>
 
 #define BUTTON_GPIO GPIO_NUM_4
-#define BUZZER_GPIO GPIO_NUM_16
+#define BUZZER_GPIO GPIO_NUM_25
 #define LEDS 4
 
 #define LCD_SDA GPIO_NUM_21
@@ -63,7 +63,7 @@ void app_main(void) {
 
   PassiveBuzzer buzzer = passive_buzzer_init(BUZZER_GPIO);
 
-  LCD lcd = lcd_init(LCD_SDA, LCD_SCL);
+  LCD lcd = lcd_init(2, 16, LCD_SDA, LCD_SCL);
   lcd_default_message(lcd);
 
   Button button = button_init(BUTTON_GPIO);
