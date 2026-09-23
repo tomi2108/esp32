@@ -10,3 +10,4 @@ typedef struct Button {
 
 Button button_init(gpio_num_t gpio);
 int button_is_pressed(Button button);
+void wait_for_release(Button button);
