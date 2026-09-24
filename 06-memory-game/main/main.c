@@ -4,7 +4,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/projdefs.h"
 #include "freertos/task.h"
-#include "lcd.h"
+#include "oled.h"
 #include "melody.h"
 #include "soc/gpio_num.h"
 #include <stdint.h>

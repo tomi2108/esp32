@@ -1,5 +1,5 @@
 idf_component_register(
-    SRCS "led.c"
+    SRCS "oled.c"
     INCLUDE_DIRS "."
-    REQUIRES esp_driver_gpio
+    REQUIRES i2c
 )

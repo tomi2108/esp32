@@ -1,5 +1,4 @@
 idf_component_register(
-    SRCS "lcd.c"
+    SRCS "seven_segment.c"
     INCLUDE_DIRS "."
-    REQUIRES i2c
 )

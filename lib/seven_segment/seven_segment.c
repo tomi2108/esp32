@@ -1,8 +1,13 @@
-#include "led.h"
+#include "seven_segment.h"
 
-LED led_init(gpio_num_t data_pins[8], gpio_num_t *common_pins, uint8_t digits,
-             Mode mode) {
-  LED led = {
+u_int8_t digits[10] = {
+    0b11111100, 0b01100000, 0b11011010, 0b11110010, 0b01100110,
+    0b10110110, 0b10111110, 0b11100000, 0b11111110, 0b11110110,
+};
+
+SevenSegment ss_int(gpio_num_t data_pins[8], gpio_num_t *common_pins,
+                    uint8_t digits, Mode mode) {
+  SevenSegment led = {
       .mode = mode,
       .digits = digits,
       .common_pins = common_pins,
@@ -21,12 +26,7 @@ LED led_init(gpio_num_t data_pins[8], gpio_num_t *common_pins, uint8_t digits,
   return led;
 }
 
-u_int8_t digits[10] = {
-    0b11111100, 0b01100000, 0b11011010, 0b11110010, 0b01100110,
-    0b10110110, 0b10111110, 0b11100000, 0b11111110, 0b11110110,
-};
-
-void led_display(LED led, u_int32_t n) {
+void ss_display(SevenSegment led, u_int32_t n) {
   static int j = 0;
 
   uint32_t divisor = 1;

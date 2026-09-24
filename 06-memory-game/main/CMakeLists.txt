@@ -1,5 +1,5 @@
 idf_component_register(
     SRCS "main.c"
     INCLUDE_DIRS "."
-    REQUIRES button lcd buzzer melody
+    REQUIRES button oled buzzer melody lcd
 )
