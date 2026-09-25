@@ -4,8 +4,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/projdefs.h"
 #include "freertos/task.h"
-#include "oled.h"
 #include "melody.h"
+#include "oled.h"
 #include "soc/gpio_num.h"
 #include <stdint.h>
 
@@ -33,11 +33,13 @@ Input inputs[INPUTS] = {
 };
 
 PassiveBuzzer buzzer;
+OLED oled = {0};
 Button start_button;
 gpio_num_t start_button_pin = GPIO_NUM_23;
 gpio_num_t buzzer_pin = GPIO_NUM_27;
 
 void init() {
+  oled_init(&oled, 128, 64, GPIO_NUM_21, GPIO_NUM_22);
   start_button = button_init(start_button_pin);
   buzzer = passive_buzzer_init(buzzer_pin);
   for (int i = 0; i < INPUTS; i++)
@@ -78,6 +80,12 @@ void pressed_correct_input(Input input) {
   buzzer_stop();
 }
 
+void show_score(int score) {
+  oled_clear(&oled);
+  oled_write_text(&oled, 0, 0, "Current Score: %d", score);
+  oled_update(&oled);
+}
+
 int wait_for_input(int correct_index) {
   while (1) {
     for (int j = 0; j < INPUTS; j++) {
@@ -100,9 +108,9 @@ int wait_for_input(int correct_index) {
 void game() {
   int level = 1;
   uint8_t sequence[100] = {};
+  show_score(0);
 
   while (1) {
-    // TODO: Show current level
     sequence[level - 1] = next_sequence_step();
     show_sequence(level, sequence);
     for (int i = 0; i < level; i++) {
@@ -110,6 +118,7 @@ void game() {
       if (wrong)
         return;
     }
+    show_score(level);
     level++;
     vTaskDelay(pdMS_TO_TICKS(1000));
   }
@@ -117,11 +126,11 @@ void game() {
 
 void app_main(void) {
   init();
-  // TODO: Show start game menu
+  oled_write_text(&oled, 0, 0, "Press button to start");
+  oled_update(&oled);
   while (1) {
     if (button_is_pressed(start_button)) {
       wait_for_release(start_button);
-
       game();
     }
     // TODO: Show lost/restart

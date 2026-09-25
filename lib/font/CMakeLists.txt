@@ -1,5 +1,4 @@
 idf_component_register(
-    SRCS "oled.c"
+    SRCS "font.c"
     INCLUDE_DIRS "."
-    REQUIRES i2c font
 )

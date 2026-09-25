@@ -4,7 +4,7 @@ i2c_master_bus_handle_t i2c_bus_init(gpio_num_t sda, gpio_num_t scl) {
   i2c_master_bus_handle_t bus;
 
   i2c_master_bus_config_t config = {
-      .i2c_port = I2C_NUM_0,
+      .i2c_port = i2c_get_next_free_port(),
       .sda_io_num = sda,
       .scl_io_num = scl,
       .clk_source = I2C_CLK_SRC_DEFAULT,
@@ -34,4 +34,15 @@ void i2c_write(i2c_master_dev_handle_t device, const uint8_t *data,
 
 void i2c_read(i2c_master_dev_handle_t device, uint8_t *data, size_t length) {
   i2c_master_receive(device, data, length, -1);
+}
+
+static bool used_ports[I2C_NUM_MAX];
+i2c_port_t i2c_get_next_free_port(void) {
+  for (i2c_port_t port = 0; port < I2C_NUM_MAX; port++) {
+    if (!used_ports[port]) {
+      used_ports[port] = true;
+      return port;
+    }
+  }
+  return I2C_NUM_MAX;
 }
