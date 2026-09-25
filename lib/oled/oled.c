@@ -81,14 +81,15 @@ void oled_set_pixel(OLED *oled, uint8_t x, uint8_t y, bool on) {
 }
 
 void oled_write_char(OLED *oled, uint8_t x, uint8_t y, char character) {
-  if (character < 0x20 || character > 0x7F)
+  if (character < 0x20 || character > 0x7E)
     return;
 
-  const uint8_t *glyph = (*oled->font)[character - 0x20];
+  Font font = *oled->font;
+  const uint8_t *glyph = font.data[character - 0x20];
 
-  for (uint8_t column = 0; column < 5; column++) {
+  for (uint8_t column = 0; column < font.width; column++) {
     uint8_t bits = glyph[column];
-    for (uint8_t row = 0; row < 7; row++)
+    for (uint8_t row = 0; row < font.height; row++)
       oled_set_pixel(oled, x + column, y + row, bits & (1 << row));
   }
 }
@@ -102,25 +103,26 @@ void oled_write_text(OLED *oled, uint8_t x, uint8_t y, const char *format,
   va_end(args);
 
   const char *text = buffer;
+  Font font = *oled->font;
 
   while (*text) {
     if (*text == '\n') {
       x = 0;
-      y += 8;
+      y += font.height + 1;
       text++;
       continue;
     }
 
-    if (x + 5 > oled->width) {
+    if (x + font.width > oled->width) {
       x = 0;
-      y += 8;
+      y += font.height + 1;
     }
 
-    if (y + 7 >= oled->height)
+    if (y + font.height >= oled->height)
       break;
 
     oled_write_char(oled, x, y, *text);
-    x += 6;
+    x += font.width + 1;
     text++;
   }
 }

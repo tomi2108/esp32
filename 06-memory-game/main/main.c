@@ -40,6 +40,7 @@ gpio_num_t buzzer_pin = GPIO_NUM_27;
 
 void init() {
   oled_init(&oled, 128, 64, GPIO_NUM_21, GPIO_NUM_22);
+  font_eight_by_eight(&oled.font);
   start_button = button_init(start_button_pin);
   buzzer = passive_buzzer_init(buzzer_pin);
   for (int i = 0; i < INPUTS; i++)
@@ -82,7 +83,7 @@ void pressed_correct_input(Input input) {
 
 void show_score(int score) {
   oled_clear(&oled);
-  oled_write_text(&oled, 0, 0, "Current Score: %d", score);
+  oled_write_text(&oled, 0, 0, "Score: %d", score);
   oled_update(&oled);
 }
 
