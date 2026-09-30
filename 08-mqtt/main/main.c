@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <string.h>
 
+
 int wholenote = (60000 * 4) / 140;
 gpio_num_t buzzer_pin = GPIO_NUM_27;
 gpio_num_t sda_pin = GPIO_NUM_21;
@@ -29,8 +30,8 @@ void show_text(char *text) {
 }
 
 void wifi_connect() {
-  show_text("Connecting to wifi \"Telecentro-2661\"");
-  wifi_init("", "");
+  show_text("Connecting to wifi \"" WIFI_SSID "\"");
+  wifi_init(WIFI_SSID, WIFI_PASSWORD);
 }
 
 void recieved_message(MqttClient client, MqttMessage message) {
@@ -42,9 +43,8 @@ void recieved_message(MqttClient client, MqttMessage message) {
 
 void mqtt_connect() {
   show_text("Connecting to mqtt...");
-  MqttClient client = mqtt_get_client(
-      "",
-      "", "", "tamagotchi");
+  MqttClient client =
+      mqtt_get_client(MQTT_URL, MQTT_USERNAME, MQTT_PASSWORD, "tamagotchi");
   mqtt_on_data(client, recieved_message);
 }
 
@@ -55,6 +55,6 @@ void app_main(void) {
   show_text("No messages");
 
   while (1) {
-    vTaskDelay(pdMS_TO_TICKS(1000));
+    vTaskDelay(pdMS_TO_TICKS(10000));
   }
 }
