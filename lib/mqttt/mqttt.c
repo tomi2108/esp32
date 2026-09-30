@@ -7,9 +7,15 @@ void subscribe_handler(void *handler_args, esp_event_base_t base,
   esp_mqtt_client_subscribe(event->client, topic, 1);
 }
 
-MqttClient mqtt_get_client(char *url, char *topic) {
+MqttClient mqtt_get_client(char *url, char *username, char *password,
+                           char *topic) {
   MqttClient client = {.url = url};
-  esp_mqtt_client_config_t mqtt_cfg = {.broker.address.uri = url};
+  esp_mqtt_client_config_t mqtt_cfg = {
+      .broker.verification.crt_bundle_attach = esp_crt_bundle_attach,
+      .broker.address.uri = url,
+      .credentials = {.username = username,
+                      .authentication.password = password,
+                      .client_id = username}};
   client._client = esp_mqtt_client_init(&mqtt_cfg);
   esp_mqtt_client_start(client._client);
   esp_mqtt_client_register_event(client._client, MQTT_EVENT_CONNECTED,
