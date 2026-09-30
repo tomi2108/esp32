@@ -44,7 +44,7 @@ void recieved_message(MqttClient client, MqttMessage message) {
 void mqtt_connect() {
   show_text("Connecting to mqtt...");
   MqttClient client =
-      mqtt_get_client(MQTT_URL, MQTT_USERNAME, MQTT_PASSWORD, "tamagotchi");
+      mqtt_get_client(MQTT_URL, MQTT_USERNAME, MQTT_PASSWORD, MQTT_TOPIC);
   mqtt_on_data(client, recieved_message);
 }
 

@@ -1,9 +1,12 @@
 #include "mqttt.h"
 
+static bool g_is_connected = false;
+
 void subscribe_handler(void *handler_args, esp_event_base_t base,
                        int32_t event_id, void *event_data) {
   esp_mqtt_event_handle_t event = event_data;
   char *topic = handler_args;
+  g_is_connected = true;
   esp_mqtt_client_subscribe(event->client, topic, 1);
 }
 
@@ -17,9 +20,14 @@ MqttClient mqtt_get_client(char *url, char *username, char *password,
                       .authentication.password = password,
                       .client_id = username}};
   client._client = esp_mqtt_client_init(&mqtt_cfg);
-  esp_mqtt_client_start(client._client);
   esp_mqtt_client_register_event(client._client, MQTT_EVENT_CONNECTED,
                                  subscribe_handler, topic);
+
+  esp_mqtt_client_start(client._client);
+
+  while (!g_is_connected) {
+    vTaskDelay(pdMS_TO_TICKS(100));
+  }
   return client;
 };
 
