@@ -46,3 +46,13 @@ void buzzer_tone_ms(PassiveBuzzer buzzer, uint32_t ms) {
   vTaskDelay(pdMS_TO_TICKS(ms));
   buzzer_stop();
 }
+
+void buzzer_play_melody(PassiveBuzzer buzzer, int wholenote, Melody melody) {
+  for (int i = 0; i < melody.count; i++) {
+    Note note = melody.notes[i];
+    uint32_t duration = duration_to_ms(note.duration, wholenote);
+    buzzer_set_frequency(&buzzer, note.frequency);
+    buzzer_tone_ms(buzzer, duration * 0.9);
+    vTaskDelay(pdMS_TO_TICKS(duration * 0.1));
+  }
+}

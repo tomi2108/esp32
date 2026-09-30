@@ -45,5 +45,11 @@ typedef struct Note {
   Duration duration;
 } Note;
 
-uint32_t melody_happy_birthday(Note **out);
+typedef struct {
+  const Note *notes;
+  size_t count;
+} Melody;
+
+Melody melody_happy_birthday();
+Melody melody_new_message();
 uint32_t duration_to_ms(Duration duration, uint32_t whole_note);

@@ -21,7 +21,7 @@ typedef struct OLED {
   uint8_t width;
   uint8_t height;
   uint8_t buffer[OLED_BUFFER_SIZE];
-  Font *font;
+  Font font;
 } OLED;
 
 void oled_init(OLED *oled, uint8_t width, uint8_t height, gpio_num_t sda,

@@ -12,11 +12,20 @@ Note happy_birthday[] = {
     {NOTE_F4, D_HALF},
 };
 
-uint32_t melody_happy_birthday(Note **out) {
-  int count = sizeof(happy_birthday) / sizeof(Note);
-  if (out != NULL)
-    *out = happy_birthday;
-  return count;
+Note new_message[] = {
+    {NOTE_C5, EIGHTH}, {NOTE_E5, EIGHTH}, {NOTE_G5, QUARTER},
+    {NOTE_E5, EIGHTH}, {NOTE_G5, EIGHTH}, {NOTE_B5, QUARTER},
+    {NOTE_G5, EIGHTH}, {NOTE_E5, EIGHTH}, {NOTE_C5, HALF},
+};
+
+Melody melody_happy_birthday() {
+  return (Melody){.count = sizeof(happy_birthday) / sizeof(Note),
+                  .notes = happy_birthday};
+}
+
+Melody melody_new_message() {
+  return (Melody){.count = sizeof(new_message) / sizeof(Note),
+                  .notes = new_message};
 }
 
 uint32_t duration_to_ms(Duration duration, uint32_t whole_note) {

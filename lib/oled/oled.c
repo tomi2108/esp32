@@ -26,7 +26,7 @@ void oled_init(OLED *oled, uint8_t width, uint8_t height, gpio_num_t sda,
   oled->device = i2c_device_init(oled->bus, OLED_ADDR, 100000);
   oled->width = width;
   oled->height = height;
-  font_default(&oled->font);
+  oled->font = font_default();
 
   uint8_t multiplex = height - 1;
   uint8_t configuration[] = {
@@ -84,7 +84,7 @@ void oled_write_char(OLED *oled, uint8_t x, uint8_t y, char character) {
   if (character < 0x20 || character > 0x7E)
     return;
 
-  Font font = *oled->font;
+  Font font = oled->font;
   const uint8_t *glyph = font.data[character - 0x20];
 
   for (uint8_t column = 0; column < font.width; column++) {
@@ -103,7 +103,7 @@ void oled_write_text(OLED *oled, uint8_t x, uint8_t y, const char *format,
   va_end(args);
 
   const char *text = buffer;
-  Font font = *oled->font;
+  Font font = oled->font;
 
   while (*text) {
     if (*text == '\n') {

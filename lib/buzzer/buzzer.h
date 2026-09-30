@@ -3,6 +3,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/projdefs.h"
 #include "freertos/task.h"
+#include "melody.h"
 #include "soc/gpio_num.h"
 
 typedef struct PassiveBuzzer {
@@ -15,3 +16,4 @@ void buzzer_set_frequency(PassiveBuzzer *buzzer, uint32_t frequency);
 void buzzer_tone(PassiveBuzzer buzzer);
 void buzzer_tone_ms(PassiveBuzzer buzzer, uint32_t ms);
 void buzzer_stop();
+void buzzer_play_melody(PassiveBuzzer buzzer, int wholenote, Melody melody);

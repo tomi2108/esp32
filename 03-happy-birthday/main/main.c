@@ -58,6 +58,7 @@ void lcd_on_message(LCD lcd) {
 }
 
 int wholenote = (60000 * 4) / 140;
+
 void app_main(void) {
   leds_init();
 
@@ -68,14 +69,13 @@ void app_main(void) {
 
   Button button = button_init(BUTTON_GPIO);
 
-  Note *melody = NULL;
-  int notes = melody_happy_birthday(&melody);
+  Melody melody = melody_happy_birthday();
 
   while (1) {
     if (button_is_pressed(button)) {
       lcd_on_message(lcd);
-      for (int i = 0; i < notes; i++) {
-        Note note = melody[i];
+      for (int i = 0; i < melody.count; i++) {
+        Note note = melody.notes[i];
         uint32_t duration = duration_to_ms(note.duration, wholenote);
         leds_set(i % LEDS);
         buzzer_set_frequency(&buzzer, note.frequency);

@@ -8,10 +8,11 @@
 typedef const uint8_t FontData[96][MAX_CHARACTER_SIZE];
 
 typedef struct Font {
-  FontData data;
+  const uint8_t (*data)[MAX_CHARACTER_SIZE];
+  size_t count;
   uint8_t width;
   uint8_t height;
 } Font;
 
-uint32_t font_default(Font **out);
-uint32_t font_eight_by_eight(Font **out);
+Font font_default();
+Font font_eight_by_eight();
