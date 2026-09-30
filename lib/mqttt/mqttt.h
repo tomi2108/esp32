@@ -1,3 +1,4 @@
+#include "buffer.h"
 #include "driver/gpio.h"
 #include "mqtt_client.h"
 
@@ -7,7 +8,7 @@ typedef struct MqttClient {
 } MqttClient;
 
 typedef struct MqttMessage {
-  char *text;
+  t_buffer *buffer;
 } MqttMessage;
 
 typedef void (*MqttMessageCallback)(MqttClient client,
@@ -15,3 +16,4 @@ typedef void (*MqttMessageCallback)(MqttClient client,
 
 MqttClient mqtt_get_client(char *url, char *topic);
 void mqtt_on_data(MqttClient client, MqttMessageCallback handler);
+void mqtt_destroy_message(MqttMessage message);

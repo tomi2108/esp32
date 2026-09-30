@@ -23,7 +23,9 @@ void init() {
 }
 
 void recieved_message(MqttClient client, MqttMessage message) {
-  char *text = message.text;
+  char *text = buffer_read_string(message.buffer);
+  mqtt_destroy_message(message);
+
   oled_clear(&oled);
   oled_write_text(&oled, 0, 0, text);
   oled_update(&oled);
@@ -35,7 +37,7 @@ void app_main(void) {
   oled_write_text(&oled, 0, 0, "Connecting...");
   oled_update(&oled);
 
-  wifi_init("Telecentro-2661", "");
+  wifi_init("Telecentro-2661", "NDJRTZRWMXAT");
   MqttClient client = mqtt_get_client("mqtt://192.168.0.37:1883", "test");
   mqtt_on_data(client, recieved_message);
 

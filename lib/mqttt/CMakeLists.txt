@@ -1,5 +1,5 @@
 idf_component_register(
     SRCS "mqttt.c"
     INCLUDE_DIRS "."
-    REQUIRES esp_driver_gpio espressif__mqtt
+    REQUIRES esp_driver_gpio espressif__mqtt buffer
 )

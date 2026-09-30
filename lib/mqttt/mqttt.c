@@ -31,11 +31,16 @@ static __OnDataHandlerArgs on_data_args = {0};
 void on_data_handler(void *args, esp_event_base_t base, int32_t id,
                      void *event_data) {
   esp_mqtt_event_handle_t event = event_data;
+
   char data[32] = {0};
   memcpy(data, event->data, event->data_len);
-
-  MqttMessage message = {.text = data};
+  MqttMessage message = {.buffer = buffer_create()};
+  buffer_add(message.buffer, event->data, event->data_len);
   on_data_args.callback(on_data_args.client, message);
+}
+
+void mqtt_destroy_message(MqttMessage message) {
+  buffer_destroy(message.buffer);
 }
 
 void mqtt_on_data(MqttClient client, MqttMessageCallback callback) {
