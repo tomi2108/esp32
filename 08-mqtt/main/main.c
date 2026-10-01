@@ -10,11 +10,7 @@
 #include <string.h>
 #include <time.h>
 
-
 int wholenote = (60000 * 4) / 140;
-gpio_num_t buzzer_pin = GPIO_NUM_27;
-gpio_num_t sda_pin = GPIO_NUM_21;
-gpio_num_t scl_pin = GPIO_NUM_22;
 
 OLED oled = {0};
 PassiveBuzzer buzzer;
@@ -24,9 +20,9 @@ uint32_t duration = 0;
 bool is_timed_message = false;
 
 void init_components() {
-  oled_init(&oled, 128, 64, sda_pin, scl_pin);
+  oled_init(&oled, 128, 64, SDA_PIN, SCL_PIN);
   oled.font = font_eight_by_eight();
-  buzzer = passive_buzzer_init(buzzer_pin);
+  buzzer = passive_buzzer_init(BUZZER_PIN);
 }
 
 void show_text(char *text) {
@@ -36,7 +32,7 @@ void show_text(char *text) {
 }
 
 void wifi_connect() {
-  show_text("Connecting to wifi \"" WIFI_SSID "\"");
+  show_text("Connecting to \"" WIFI_SSID "\"");
   wifi_init(WIFI_SSID, WIFI_PASSWORD);
 }
 
