@@ -1,3 +1,4 @@
+#include "./env.h"
 #include "buzzer.h"
 #include "freertos/idf_additions.h"
 #include "freertos/projdefs.h"
@@ -65,19 +66,21 @@ void display_message() {
   oled_update(&oled);
 }
 
-void init_components() {
+void init() {
   oled_init(&oled, 128, 64, SDA_PIN, SCL_PIN);
   oled.font = font_eight_by_eight();
   buzzer = passive_buzzer_init(BUZZER_PIN);
-}
-
-void app_main(void) {
-  init_components();
   buzzer_play_melody(buzzer, wholenote, sound_boot());
+
   wifi_connect();
   mqtt_connect();
   buzzer_play_melody(buzzer, wholenote, sound_success());
+
   show_text("No messages");
+}
+
+void app_main(void) {
+  init();
 
   while (1) {
     if (current_message != NULL) {
