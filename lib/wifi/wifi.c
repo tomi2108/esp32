@@ -4,19 +4,12 @@ static EventGroupHandle_t wifi_events;
 
 static void wifi_event_handler(void *arg, esp_event_base_t event_base,
                                int32_t event_id, void *event_data) {
-  if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
+  if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START)
     esp_wifi_connect();
-  }
-
-  if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-    wifi_event_sta_disconnected_t *event = event_data;
-
+  if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
     esp_wifi_connect();
-  }
-
-  if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
+  if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
     xEventGroupSetBits(wifi_events, BIT0);
-  }
 }
 
 void wifi_init(const char *ssid, const char *password) {

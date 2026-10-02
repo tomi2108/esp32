@@ -4,6 +4,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "i2c.h"
+#include "menu.h"
 #include "rom/ets_sys.h"
 #include <stdarg.h>
 #include <stdint.h>
@@ -24,10 +25,17 @@ typedef struct OLED {
   Font font;
 } OLED;
 
-void oled_init(OLED *oled, uint8_t width, uint8_t height, gpio_num_t sda,
-               gpio_num_t scl);
-void oled_write_text(OLED *oled, uint8_t x, uint8_t y, const char *format, ...);
-void oled_write_char(OLED *oled, uint8_t x, uint8_t y, char character);
-void oled_set_pixel(OLED *oled, uint8_t x, uint8_t y, bool on);
 void oled_clear(OLED *oled);
 void oled_update(OLED *oled);
+void oled_init(OLED *oled, uint8_t width, uint8_t height, gpio_num_t sda,
+               gpio_num_t scl);
+
+void oled_write_text(OLED *oled, uint8_t x, uint8_t y, bool inverted,
+                     const char *format, ...);
+
+void oled_write_char(OLED *oled, uint8_t x, uint8_t y, char character);
+void oled_write_char_inverted(OLED *oled, uint8_t x, uint8_t y, char character);
+
+void oled_set_pixel(OLED *oled, uint8_t x, uint8_t y, bool on);
+
+void oled_display_menu(OLED *oled, Menu menu);

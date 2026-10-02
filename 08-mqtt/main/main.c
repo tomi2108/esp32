@@ -19,15 +19,9 @@ char *current_message = NULL;
 uint32_t duration = 0;
 bool is_timed_message = false;
 
-void init_components() {
-  oled_init(&oled, 128, 64, SDA_PIN, SCL_PIN);
-  oled.font = font_eight_by_eight();
-  buzzer = passive_buzzer_init(BUZZER_PIN);
-}
-
 void show_text(char *text) {
   oled_clear(&oled);
-  oled_write_text(&oled, 0, 0, text);
+  oled_write_text(&oled, 0, 0, false, text);
   oled_update(&oled);
 }
 
@@ -63,12 +57,18 @@ void mqtt_connect() {
 void display_message() {
   oled_clear(&oled);
   if (current_message != NULL)
-    oled_write_text(&oled, 0, 0, current_message);
+    oled_write_text(&oled, 0, 0, false, current_message);
 
   if (is_timed_message && duration > 0)
-    oled_write_text(&oled, 0, oled.height - 10, "%us", duration);
+    oled_write_text(&oled, 0, oled.height - 10, false, "%us", duration);
 
   oled_update(&oled);
+}
+
+void init_components() {
+  oled_init(&oled, 128, 64, SDA_PIN, SCL_PIN);
+  oled.font = font_eight_by_eight();
+  buzzer = passive_buzzer_init(BUZZER_PIN);
 }
 
 void app_main(void) {

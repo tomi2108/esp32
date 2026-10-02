@@ -8,9 +8,7 @@ Button button_init(gpio_num_t gpio) {
   return (Button){.gpio = gpio};
 };
 
-int button_is_pressed(Button button) {
-  return gpio_get_level(button.gpio) == 1;
-}
+int button_is_pressed(Button button) { return gpio_get_level(button.gpio); }
 
 void wait_for_release(Button button) {
   while (button_is_pressed(button))

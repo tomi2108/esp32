@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 typedef struct Option {
   char *key;
   int32_t value;

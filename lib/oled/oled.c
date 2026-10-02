@@ -80,7 +80,8 @@ void oled_set_pixel(OLED *oled, uint8_t x, uint8_t y, bool on) {
     oled->buffer[index] &= ~mask;
 }
 
-void oled_write_char(OLED *oled, uint8_t x, uint8_t y, char character) {
+void oled_write_char_mode(OLED *oled, uint8_t x, uint8_t y, char character,
+                          bool inverted) {
   if (character < 0x20 || character > 0x7E)
     return;
 
@@ -89,12 +90,25 @@ void oled_write_char(OLED *oled, uint8_t x, uint8_t y, char character) {
 
   for (uint8_t column = 0; column < font.width; column++) {
     uint8_t bits = glyph[column];
-    for (uint8_t row = 0; row < font.height; row++)
-      oled_set_pixel(oled, x + column, y + row, bits & (1 << row));
+    for (uint8_t row = 0; row < font.height; row++) {
+      bool on = bits & (1 << row);
+      if (inverted)
+        on = !on;
+      oled_set_pixel(oled, x + column, y + row, on);
+    }
   }
 }
-void oled_write_text(OLED *oled, uint8_t x, uint8_t y, const char *format,
-                     ...) {
+
+void oled_write_char(OLED *oled, uint8_t x, uint8_t y, char character) {
+  oled_write_char_mode(oled, x, y, character, false);
+}
+void oled_write_char_inverted(OLED *oled, uint8_t x, uint8_t y,
+                              char character) {
+  oled_write_char_mode(oled, x, y, character, true);
+}
+
+void oled_write_text(OLED *oled, uint8_t x, uint8_t y, bool inverted,
+                     const char *format, ...) {
   char buffer[128];
 
   va_list args;
@@ -115,14 +129,14 @@ void oled_write_text(OLED *oled, uint8_t x, uint8_t y, const char *format,
 
     if (x + font.width > oled->width) {
       x = 0;
-      y += font.height + 1;
+      y += font.height;
     }
 
-    if (y + font.height >= oled->height)
+    if (y + font.height > oled->height)
       break;
 
-    oled_write_char(oled, x, y, *text);
-    x += font.width + 1;
+    oled_write_char_mode(oled, x, y, *text, inverted);
+    x += font.width;
     text++;
   }
 }
@@ -146,4 +160,39 @@ void oled_update(OLED *oled) {
 void oled_clear(OLED *oled) {
   size_t size = oled->width * ((oled->height + 7) / 8);
   memset(oled->buffer, 0, size);
+}
+
+void oled_display_menu(OLED *oled, Menu menu) {
+  uint8_t line_height = oled->font.height + 1;
+  uint8_t visible = oled->height / line_height;
+
+  uint8_t scroll_offset = 0;
+
+  if (menu.length > visible) {
+    if (menu.selected >= visible / 2)
+      scroll_offset = menu.selected - visible / 2;
+    if (scroll_offset + visible > menu.length)
+      scroll_offset = menu.length - visible;
+  }
+
+  for (uint8_t i = 0; i < visible; i++) {
+    uint8_t index = scroll_offset + i;
+
+    if (index >= menu.length)
+      break;
+
+    uint8_t y = i * line_height;
+    bool is_selected = index == menu.selected;
+    size_t width = strlen(menu.options[index].key) * (oled->font.width);
+
+    oled_write_text(oled, 1, y + 1, is_selected, "%s", menu.options[index].key);
+    for (uint8_t row = 0; row < oled->font.height + 2; row++) {
+      oled_set_pixel(oled, 0, y + row, is_selected);
+      oled_set_pixel(oled, width + 1, y + row, is_selected);
+    }
+    for (uint8_t x = 0; x <= width + 1; x++) {
+      oled_set_pixel(oled, x, y, is_selected);
+      oled_set_pixel(oled, x, y + oled->font.height + 1, is_selected);
+    }
+  }
 }
