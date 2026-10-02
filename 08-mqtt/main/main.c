@@ -50,7 +50,7 @@ void recieved_message(MqttClient client, MqttMessage message) {
   is_timed_message = duration > 0;
 
   mqtt_destroy_message(message);
-  buzzer_play_melody(buzzer, wholenote, melody_new_message());
+  buzzer_play_melody(buzzer, wholenote, sound_notification());
 }
 
 void mqtt_connect() {
@@ -73,8 +73,10 @@ void display_message() {
 
 void app_main(void) {
   init_components();
+  buzzer_play_melody(buzzer, wholenote, sound_boot());
   wifi_connect();
   mqtt_connect();
+  buzzer_play_melody(buzzer, wholenote, sound_success());
   show_text("No messages");
 
   while (1) {

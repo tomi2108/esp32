@@ -3,6 +3,9 @@
 #include "freertos/task.h"
 #include <sys/types.h>
 
+#define DECLARE_MELODY(name) Melody melody_##name();
+#define DECLARE_SOUND(name) Melody sound_##name();
+
 #define NOTE_C4 262
 #define NOTE_CS4 277
 #define NOTE_D4 294
@@ -50,6 +53,13 @@ typedef struct {
   size_t count;
 } Melody;
 
-Melody melody_happy_birthday();
-Melody melody_new_message();
 uint32_t duration_to_ms(Duration duration, uint32_t whole_note);
+
+DECLARE_MELODY(happy_birthday)
+DECLARE_SOUND(boot)
+DECLARE_SOUND(disconnect)
+DECLARE_SOUND(error)
+DECLARE_SOUND(success)
+DECLARE_SOUND(warning)
+DECLARE_SOUND(click)
+DECLARE_SOUND(notification)

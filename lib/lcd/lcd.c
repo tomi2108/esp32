@@ -104,3 +104,18 @@ void lcd_print_line(LCD lcd, uint8_t row, const char *text) {
     i++;
   }
 }
+
+void lcd_display_menu(LCD lcd, Menu menu) {
+  lcd_clear(lcd);
+  char first_line[lcd.columns + 1];
+  char *selected_option = menu.options[menu.selected].key;
+  snprintf(first_line, sizeof(first_line), ">%s", selected_option);
+  lcd_print_line(lcd, 0, first_line);
+
+  for (int i = 1; i < lcd.rows; i++) {
+    char next_line[lcd.columns + 1];
+    char *next_option = menu.options[(menu.selected + 1) % menu.length].key;
+    snprintf(next_line, sizeof(next_line), " %s", next_option);
+    lcd_print_line(lcd, i, next_line);
+  }
+}

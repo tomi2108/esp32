@@ -3,6 +3,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "i2c.h"
+#include "menu.h"
 #include "rom/ets_sys.h"
 #include <stdint.h>
 
@@ -22,3 +23,5 @@ typedef struct LCD {
 LCD lcd_init(uint8_t rows, uint8_t columns, gpio_num_t sda, gpio_num_t scl);
 void lcd_clear(LCD lcd);
 void lcd_print_line(LCD lcd, uint8_t row, const char *text);
+
+void lcd_display_menu(LCD lcd, Menu menu);
