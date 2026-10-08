@@ -52,6 +52,10 @@ int buffer_add_uint8(t_buffer *buffer, uint8_t data) {
   return buffer_add(buffer, &data, sizeof(uint8_t));
 }
 
+int buffer_add_uint32(t_buffer *buffer, uint32_t data) {
+  return buffer_add(buffer, &data, sizeof(uint32_t));
+}
+
 int buffer_add_string(t_buffer *buffer, uint32_t length, char *string) {
   uint32_t l = sizeof(char) * (length + 1);
   buffer_add_uint32(buffer, l);

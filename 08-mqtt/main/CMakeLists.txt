@@ -1,5 +1,5 @@
 idf_component_register(
     SRCS "main.c"
     INCLUDE_DIRS "."
-    REQUIRES oled buzzer mqttt wifi rotary_encoder
+    REQUIRES oled buzzer mqttt wifi rotary_encoder http json
 )

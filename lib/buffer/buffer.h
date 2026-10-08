@@ -1,3 +1,6 @@
+#ifndef BUFFER_H
+#define BUFFER_H
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,3 +28,5 @@ uint32_t buffer_read_uint32(t_buffer *buffer);
 char *buffer_read_string(t_buffer *buffer);
 
 bool buffer_is_eof(t_buffer *buffer);
+
+#endif
