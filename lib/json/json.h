@@ -1,4 +1,5 @@
-#pragma once
+#ifndef JSON_H
+#define JSON_H
 
 #include "buffer.h"
 #include <stdbool.h>
@@ -30,3 +31,5 @@ int json_bool(t_json *json, bool value);
 int json_null(t_json *json);
 
 t_buffer *json_buffer(t_json *json);
+
+#endif

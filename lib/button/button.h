@@ -1,3 +1,6 @@
+#ifndef BUTTON_H
+#define BUTTON_H
+
 #include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/projdefs.h"
@@ -11,3 +14,5 @@ typedef struct Button {
 Button button_init(gpio_num_t gpio);
 int button_is_pressed(Button button);
 void wait_for_release(Button button);
+
+#endif

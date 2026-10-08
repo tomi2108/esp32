@@ -1,3 +1,6 @@
+#ifndef MELODY_H
+#define MELODY_H
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/projdefs.h"
 #include "freertos/task.h"
@@ -63,3 +66,4 @@ DECLARE_SOUND(success)
 DECLARE_SOUND(warning)
 DECLARE_SOUND(click)
 DECLARE_SOUND(notification)
+#endif

@@ -1,3 +1,6 @@
+#ifndef WIFI_H
+#define WIFI_H
+
 #include "driver/gpio.h"
 #include "esp_event.h"
 #include "esp_netif.h"
@@ -11,3 +14,4 @@
 #include <sys/types.h>
 
 void wifi_init(const char *ssid, const char *password);
+#endif

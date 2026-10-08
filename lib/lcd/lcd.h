@@ -1,3 +1,6 @@
+#ifndef LCD_H
+#define LCD_H
+
 #include "driver/gpio.h"
 #include "driver/i2c_master.h"
 #include "freertos/FreeRTOS.h"
@@ -25,3 +28,4 @@ void lcd_clear(LCD lcd);
 void lcd_print_line(LCD lcd, uint8_t row, const char *text);
 
 void lcd_display_menu(LCD lcd, Menu menu);
+#endif

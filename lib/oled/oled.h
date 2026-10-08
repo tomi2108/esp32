@@ -1,3 +1,6 @@
+#ifndef OLED_H
+#define OLED_H
+
 #include "driver/gpio.h"
 #include "driver/i2c_master.h"
 #include "font.h"
@@ -39,3 +42,4 @@ void oled_write_char_inverted(OLED *oled, uint8_t x, uint8_t y, char character);
 void oled_set_pixel(OLED *oled, uint8_t x, uint8_t y, bool on);
 
 void oled_display_menu(OLED *oled, Menu menu);
+#endif

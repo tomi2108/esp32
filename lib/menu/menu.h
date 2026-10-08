@@ -1,3 +1,6 @@
+#ifndef MENU_H
+#define MENU_H
+
 #include <stdint.h>
 
 typedef struct Option {
@@ -19,3 +22,4 @@ typedef struct Menu {
 void menu_next(Menu *menu);
 void menu_prev(Menu *menu);
 void menu_select(Menu *menu);
+#endif

@@ -1,3 +1,6 @@
+#ifndef I2C_H
+#define I2C_H
+
 #include "driver/gpio.h"
 #include "driver/i2c_master.h"
 #include <stddef.h>
@@ -11,3 +14,4 @@ void i2c_write(i2c_master_dev_handle_t device, const uint8_t *data,
                size_t length);
 void i2c_read(i2c_master_dev_handle_t device, uint8_t *data, size_t length);
 i2c_port_t i2c_get_next_free_port(void);
+#endif

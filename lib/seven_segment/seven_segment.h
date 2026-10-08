@@ -1,3 +1,6 @@
+#ifndef SEVEN_SEGMENT_H
+#define SEVEN_SEGMENT_H
+
 #include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/projdefs.h"
@@ -22,3 +25,4 @@ typedef struct SevenSegment {
 SevenSegment ss_init(gpio_num_t data_pins[8], gpio_num_t *common_pins,
                      u_int8_t digits, Mode mode);
 void ss_display(SevenSegment led, u_int32_t n);
+#endif

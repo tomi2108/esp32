@@ -1,3 +1,6 @@
+#ifndef FONT_H
+#define FONT_H
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/projdefs.h"
 #include "freertos/task.h"
@@ -16,3 +19,4 @@ typedef struct Font {
 
 Font font_default();
 Font font_eight_by_eight();
+#endif

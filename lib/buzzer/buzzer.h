@@ -1,3 +1,6 @@
+#ifndef BUZZER_H
+#define BUZZER_H
+
 #include "driver/gpio.h"
 #include "driver/ledc.h"
 #include "freertos/FreeRTOS.h"
@@ -17,3 +20,5 @@ void buzzer_tone(PassiveBuzzer buzzer);
 void buzzer_tone_ms(PassiveBuzzer buzzer, uint32_t ms);
 void buzzer_stop();
 void buzzer_play_melody(PassiveBuzzer buzzer, int wholenote, Melody melody);
+
+#endif
