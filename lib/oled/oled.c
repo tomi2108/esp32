@@ -219,3 +219,29 @@ void oled_display_menu(OLED *oled, Menu menu) {
     }
   }
 }
+
+static void draw_dot(OLED *oled, int cx, int cy, int radius, bool on) {
+  for (int dy = -radius; dy <= radius; dy++) {
+    for (int dx = -radius; dx <= radius; dx++) {
+      if (dx * dx + dy * dy <= radius * radius) {
+        oled_set_pixel(oled, cx + dx, cy + dy, on);
+      }
+    }
+  }
+}
+
+void oled_draw_spinner(OLED *oled, int cx, int cy, int radius) {
+  int frame = (esp_timer_get_time() / 100000) % 8;
+
+  for (int i = 0; i < 8; i++) {
+    float angle = 2.0f * PI * i / 8;
+
+    int x = cx + (int)(cosf(angle) * radius);
+    int y = cy + (int)(sinf(angle) * radius);
+
+    int distance = (i - frame + 8) % 8;
+    bool on = distance < 4;
+
+    draw_dot(oled, x, y, 2, on);
+  }
+}

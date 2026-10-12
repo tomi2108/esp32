@@ -3,17 +3,20 @@
 
 #include "driver/gpio.h"
 #include "driver/i2c_master.h"
+#include "esp_timer.h"
 #include "font.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "i2c.h"
 #include "menu.h"
 #include "rom/ets_sys.h"
+#include <math.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
+#define PI 3.14159265f
 #define OLED_ADDR 0x3C
 #define OLED_MAX_WIDTH 128
 #define OLED_MAX_HEIGHT 128
@@ -42,4 +45,6 @@ void oled_write_char_inverted(OLED *oled, uint8_t x, uint8_t y, char character);
 void oled_set_pixel(OLED *oled, uint8_t x, uint8_t y, bool on);
 
 void oled_display_menu(OLED *oled, Menu menu);
+
+void oled_draw_spinner(OLED *oled, int cx, int cy, int radius);
 #endif
