@@ -1,6 +1,7 @@
 #ifndef MENU_H
 #define MENU_H
 
+#include "buzzer.h"
 #include <stdint.h>
 
 typedef struct Option {
@@ -11,7 +12,9 @@ typedef struct Option {
 typedef struct Menu {
   Option *options;
   int length;
+  int current;
   int selected;
+  PassiveBuzzer *buzzer;
 
   void *context;
   void (*on_next)(void *context);

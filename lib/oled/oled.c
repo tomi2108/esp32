@@ -163,14 +163,15 @@ void oled_clear(OLED *oled) {
 }
 
 void oled_display_menu(OLED *oled, Menu menu) {
+  oled_clear(oled);
   uint8_t line_height = oled->font.height + 1;
   uint8_t visible = oled->height / line_height;
   uint8_t scroll_offset = 0;
   size_t max_chars = oled->width / oled->font.width;
 
   if (menu.length > visible) {
-    if (menu.selected >= visible / 2)
-      scroll_offset = menu.selected - visible / 2;
+    if (menu.current >= visible / 2)
+      scroll_offset = menu.current - visible / 2;
     if (scroll_offset + visible > menu.length)
       scroll_offset = menu.length - visible;
   }
@@ -186,7 +187,7 @@ void oled_display_menu(OLED *oled, Menu menu) {
       continue;
 
     uint8_t y = i * line_height;
-    bool is_selected = index == menu.selected;
+    bool is_selected = index == menu.current;
     size_t len = strlen(key);
     char text[max_chars + 1];
 

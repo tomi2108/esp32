@@ -30,5 +30,6 @@ void rotary_encoder_init(RotaryEncoder *encoder, gpio_num_t a, gpio_num_t b,
 int32_t rotary_encoder_position(RotaryEncoder *encoder);
 RotaryDirection rotary_encoder_direction(RotaryEncoder *encoder);
 bool rotary_encoder_is_pressed(RotaryEncoder *encoder);
+void rotary_encoder_wait_for_release(RotaryEncoder *encoder);
 
 #endif

@@ -69,3 +69,8 @@ RotaryDirection rotary_encoder_direction(RotaryEncoder *encoder) {
 bool rotary_encoder_is_pressed(RotaryEncoder *encoder) {
   return !gpio_get_level(encoder->button);
 }
+
+void rotary_encoder_wait_for_release(RotaryEncoder *encoder) {
+  while (rotary_encoder_is_pressed(encoder))
+    vTaskDelay(pdMS_TO_TICKS(200));
+}

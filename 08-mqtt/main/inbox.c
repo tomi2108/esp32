@@ -3,13 +3,15 @@
 #include "menu.h"
 #include "mqttt.h"
 #include "oled.h"
+#include "rotary_encoder.h"
 
 #define INBOX_SIZE 500
 
 extern PassiveBuzzer buzzer;
 extern int wholenote;
 extern OLED oled;
-extern Menu menu;
+extern RotaryEncoder rotary_encoder;
+Menu inbox_menu;
 
 typedef struct Message {
   char *message;
@@ -41,7 +43,7 @@ void inbox_add(Message m) {
 void inbox_read(int index) { inbox[index].is_read = true; };
 
 void inbox_remove(int index) {
-  // free(inbox[index].message);
+  free(inbox[index].message);
   inbox[index].message = NULL;
 };
 
@@ -69,20 +71,12 @@ void message_display(Message m) {
   oled_update(&oled);
 };
 
-void back(void *context, int32_t index) { showing_message = false; }
-
 void select_message(void *context, int32_t index) {
   showing_message = true;
   message_display(inbox[index]);
-  menu.on_select = back;
 };
 
 void inbox_display() {
-  int count = inbox_count();
-  if (count == 0) {
-    // TODO: show "no messages" screen
-    return;
-  }
 
   static Option o[INBOX_SIZE];
 
@@ -98,11 +92,10 @@ void inbox_display() {
     }
   }
 
-  menu.length = count;
-  menu.options = o;
-  menu.on_select = select_message;
-  oled_clear(&oled);
-  oled_display_menu(&oled, menu);
+  inbox_menu.on_select = select_message;
+  inbox_menu.length = inbox_count();
+  inbox_menu.options = o;
+  oled_display_menu(&oled, inbox_menu);
   oled_update(&oled);
 }
 
@@ -112,9 +105,42 @@ void mqtt_connect() {
   mqtt_on_data(client, message_recieved);
 }
 
-void inbox_init() { mqtt_connect(); }
+void inbox_on_boot() {
+  mqtt_connect();
+  inbox_menu.buzzer = &buzzer;
+  inbox_menu.on_select = select_message;
+}
 
 void inbox_update() {
-  if (!showing_message)
-    inbox_display();
+  // TODO: add a way to go back to menu
+  while (1) {
+    if (!showing_message) {
+      int count = inbox_count();
+      if (count == 0) {
+        oled_clear(&oled);
+        oled_write_text(&oled, 0, oled.height / 2 - 3, false, "Inbox empty");
+        oled_update(&oled);
+        continue;
+      }
+
+      inbox_display();
+      RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
+
+      if (direction == ROTARY_CLOCKWISE)
+        menu_next(&inbox_menu);
+
+      if (direction == ROTARY_COUNTERCLOCKWISE)
+        menu_prev(&inbox_menu);
+
+      if (rotary_encoder_is_pressed(&rotary_encoder)) {
+        rotary_encoder_wait_for_release(&rotary_encoder);
+        menu_select(&inbox_menu);
+      }
+    } else {
+      if (rotary_encoder_is_pressed(&rotary_encoder)) {
+        rotary_encoder_wait_for_release(&rotary_encoder);
+        showing_message = false;
+      }
+    }
+  }
 }

@@ -1,30 +1,27 @@
 #include "./env.h"
 #include "buzzer.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/projdefs.h"
+#include "freertos/task.h"
 #include "inbox.c"
 #include "oled.h"
 #include "rotary_encoder.h"
+#include "stopwatch.c"
 #include "wifi.h"
 
-int wholenote = (60000 * 4) / 140;
 PassiveBuzzer buzzer;
+int wholenote = (60000 * 4) / 140;
+OLED oled;
 RotaryEncoder rotary_encoder;
 
-void on_next(void *context) {
-  buzzer_set_frequency(&buzzer, 550);
-  buzzer_tone_ms(buzzer, 100);
-}
-
-void on_prev(void *context) {
-  buzzer_set_frequency(&buzzer, 393);
-  buzzer_tone_ms(buzzer, 100);
-}
+Option options[2] = {{.key = "Inbox", .value = 0},
+                     {.key = "Stopwatch", .value = 1}};
 
 Menu menu = {
-    .on_next = on_next,
-    .on_prev = on_prev,
+    .current = 0,
+    .length = 2,
+    .selected = -1,
 };
-
-OLED oled;
 
 void initial_screen(char *text) {
   oled_clear(&oled);
@@ -43,13 +40,15 @@ void init() {
   buzzer = passive_buzzer_init(BUZZER_PIN);
   rotary_encoder_init(&rotary_encoder, A_PIN, B_PIN, BUTTON_PIN);
 
+  menu.options = options;
+  menu.buzzer = &buzzer;
   buzzer_play_melody(buzzer, wholenote, sound_boot());
   wifi_connect();
 }
 
 void app_main(void) {
   init();
-  inbox_init();
+  inbox_on_boot();
 
   while (1) {
     RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
@@ -60,9 +59,24 @@ void app_main(void) {
     if (direction == ROTARY_COUNTERCLOCKWISE)
       menu_prev(&menu);
 
-    if (rotary_encoder_is_pressed(&rotary_encoder))
+    if (rotary_encoder_is_pressed(&rotary_encoder)) {
+      rotary_encoder_wait_for_release(&rotary_encoder);
       menu_select(&menu);
+    }
 
-    inbox_update();
+    switch (menu.selected) {
+    case 0:
+      inbox_update();
+      break;
+    case 1:
+      stopwatch_on_start();
+      stopwatch_update();
+      break;
+    default:
+      oled_display_menu(&oled, menu);
+      oled_update(&oled);
+      break;
+    }
+    menu.selected = -1;
   };
 };
