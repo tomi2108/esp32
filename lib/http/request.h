@@ -5,11 +5,9 @@
 #include "list.h"
 #include "protocol.h"
 #include "response.h"
-#include <netdb.h>
-#include <unistd.h>
+#include "esp_http_client.h"
 
 typedef struct Request {
-  t_buffer *buffer;
   char method[16];
   char path[1024];
   Body body;
@@ -18,8 +16,6 @@ typedef struct Request {
 
 Request *request_create();
 void request_destroy(Request *request);
-
-Response *request_send(Request *req, int socket);
-Request *request_recieve(int socket);
+Response *request_send(Request *req, const char *url);
 
 #endif

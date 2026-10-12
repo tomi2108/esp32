@@ -5,12 +5,11 @@
 #include "list.h"
 #include "request.h"
 #include "response.h"
-#include <netdb.h>
+#include "esp_http_server.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 typedef void (*Handler)(Request *req, Response *res);
 
@@ -18,9 +17,11 @@ typedef struct Endpoint {
   Path path;
   Method method;
   Handler handler;
+  httpd_uri_t uri_cfg;
 } Endpoint;
 
 typedef struct HttpServer {
+  httpd_handle_t handle;
   t_list *endpoints;
 } HttpServer;
 

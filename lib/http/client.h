@@ -2,10 +2,13 @@
 #define CLIENT_H_
 
 #include "buffer.h"
+#include "esp_crt_bundle.h"
+#include "esp_log.h"
+#include "esp_http_client.h"
 #include "list.h"
+#include "protocol.h"
 #include "request.h"
 #include "response.h"
-#include <netdb.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,9 +17,10 @@
 
 typedef struct HttpClient {
   Headers headers;
+  char *baseUrl;
 } HttpClient;
 
-HttpClient *client_create();
+HttpClient *client_create(char *baseUrl);
 void client_destroy(HttpClient *client);
 
 Response *client_send_get(HttpClient *client, char *path);

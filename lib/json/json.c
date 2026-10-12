@@ -919,7 +919,6 @@ static t_json_value *json_parse_value(t_json_parser *parser) {
 }
 
 /* Reader: public parsing functions */
-
 t_json_value *json_parse(const char *input) {
   if (input == NULL)
     return NULL;
@@ -938,8 +937,13 @@ t_json_value *json_parse(const char *input) {
     return NULL;
 
   json_skip_whitespace(&parser);
+  while (parser.input[parser.position] == '\r' ||
+         parser.input[parser.position] == '\n') {
+    parser.position++;
+  }
+  json_skip_whitespace(&parser);
 
-  if (json_peek(&parser) != '\0') {
+  if (parser.input[parser.position] != '\0') {
     json_value_destroy(root);
     return NULL;
   }

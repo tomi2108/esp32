@@ -4,6 +4,7 @@
 #include "buffer.h"
 #include "list.h"
 #include <string.h>
+#include <stdint.h>
 
 typedef char *Method;
 typedef char *Path;

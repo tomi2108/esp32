@@ -1,64 +1,123 @@
 #include "client.h"
-#include "list.h"
-#include "protocol.h"
-#include "request.h"
-#include "response.h"
-#include <string.h>
 
-HttpClient *client_create() {
+typedef struct {
+  Response *response;
+} http_event_ctx_t;
+
+static esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
+  http_event_ctx_t *ctx = (http_event_ctx_t *)evt->user_data;
+  switch (evt->event_id) {
+  case HTTP_EVENT_ON_CONNECTED:
+    break;
+  case HTTP_EVENT_HEADER_SENT:
+    break;
+  case HTTP_EVENT_ON_HEADER:
+    if (ctx && ctx->response && ctx->response->headers) {
+      headers_add(ctx->response->headers, evt->header_key, evt->header_value);
+    }
+    break;
+  case HTTP_EVENT_ON_DATA:
+    if (ctx && ctx->response && ctx->response->body) {
+      buffer_add(ctx->response->body, evt->data, evt->data_len);
+    };
+    break;
+  case HTTP_EVENT_ON_FINISH:
+    break;
+  case HTTP_EVENT_DISCONNECTED:
+    break;
+  default:
+    break;
+  }
+  return ESP_OK;
+}
+
+HttpClient *client_create(char *baseUrl) {
   HttpClient *client = malloc(sizeof(HttpClient));
+  if (!client)
+    return NULL;
+
+  client->baseUrl = baseUrl;
   client->headers = headers_create();
+
+  char host[100] = {0};
+  if (sscanf(baseUrl, "http://%99[^:/]", host) == 1 ||
+      sscanf(baseUrl, "https://%99[^:/]", host) == 1) {
+    headers_add(client->headers, "Host", host);
+  }
+
+  headers_add(client->headers, "Connection", "close");
+  headers_add(client->headers, "Accept-Encoding", "identity");
   return client;
 }
 
 void client_destroy(HttpClient *client) {
-  if (client->headers) {
+  if (!client)
+    return;
+  if (client->headers)
     headers_destroy(client->headers);
-  }
+  free(client);
 }
 
 Response *client_send(HttpClient *client, Method method, char *url, Body body) {
-  char host[100] = {0};
-  int p;
-  char path[100] = {0};
-  char port[100] = {0};
+  char full_url[256] = {0};
 
-  sscanf(url, "http://%99[^:]:%d/%99[^\n]", host, &p, path);
-  snprintf(port, 100, "%d", p);
-  if (strlen(path) == 0)
-    path[0] = '/';
+  if (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0) {
+    snprintf(full_url, sizeof(full_url), "%s", url);
+  } else {
+    int need_slash =
+        (client->baseUrl[strlen(client->baseUrl) - 1] != '/' && url[0] != '/');
+    snprintf(full_url, sizeof(full_url), "%s%s%s", client->baseUrl,
+             need_slash ? "/" : "", url);
+  }
 
-  Request *req = request_create();
-  req->headers = client->headers;
-  req->body = body;
-  strcpy(req->method, method);
-  strcpy(req->path, path);
+  esp_http_client_method_t esp_method = HTTP_METHOD_GET;
+  if (strcmp(method, "POST") == 0)
+    esp_method = HTTP_METHOD_POST;
+  else if (strcmp(method, "PUT") == 0)
+    esp_method = HTTP_METHOD_PUT;
+  else if (strcmp(method, "PATCH") == 0)
+    esp_method = HTTP_METHOD_PATCH;
+  else if (strcmp(method, "DELETE") == 0)
+    esp_method = HTTP_METHOD_DELETE;
+  else if (strcmp(method, "OPTIONS") == 0)
+    esp_method = HTTP_METHOD_OPTIONS;
+  else if (strcmp(method, "HEAD") == 0)
+    esp_method = HTTP_METHOD_HEAD;
 
-  // Consider  moving this to HttpClient client_create
-  struct addrinfo hints;
-  struct addrinfo *server_info;
-  memset(&hints, 0, sizeof(hints));
-  hints.ai_family = AF_INET;
-  hints.ai_socktype = SOCK_STREAM;
-  hints.ai_flags = AI_PASSIVE;
-
-  int err_get_addr = getaddrinfo(host, port, &hints, &server_info);
-  if (err_get_addr != 0)
+  Response *res = response_create();
+  if (!res)
     return NULL;
 
-  int fd_socket = socket(server_info->ai_family, server_info->ai_socktype,
-                         server_info->ai_protocol);
+  http_event_ctx_t ctx = {.response = res};
 
-  if (fd_socket == -1)
+  esp_http_client_config_t config = {
+      .url = full_url,
+      .method = esp_method,
+      .event_handler = _http_event_handler,
+      .user_data = &ctx,
+      .crt_bundle_attach = esp_crt_bundle_attach,
+  };
+
+  esp_http_client_handle_t client_handle = esp_http_client_init(&config);
+  if (client_handle == NULL) {
+    response_destroy(res);
     return NULL;
+  }
 
-  int err_connect =
-      connect(fd_socket, server_info->ai_addr, server_info->ai_addrlen);
-  if (err_connect == -1)
+  if (body && body->stream && body->size > 0) {
+    esp_http_client_set_post_field(client_handle, body->stream, body->size);
+  }
+
+  esp_err_t err = esp_http_client_perform(client_handle);
+  if (err == ESP_OK) {
+    res->status_code = esp_http_client_get_status_code(client_handle);
+  } else {
+    response_destroy(res);
+    esp_http_client_cleanup(client_handle);
     return NULL;
+  }
 
-  freeaddrinfo(server_info);
-  Response *res = request_send(req, fd_socket);
+  esp_http_client_cleanup(client_handle);
   return res;
 }
 

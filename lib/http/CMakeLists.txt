@@ -6,5 +6,5 @@ idf_component_register(
         "response.c"
         "server.c"
     INCLUDE_DIRS "."
-    REQUIRES buffer
+    REQUIRES buffer esp-tls esp_netif esp_http_client esp_http_server
 )
