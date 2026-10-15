@@ -77,15 +77,15 @@ void state_display() {
   oled_draw_progress_bar(&oled, bar_x, stats_y + line_height + 1, bar_width,
                          bar_height, state.hunger);
 
-  oled_write_text(&oled, stats_x, stats_y + line_height * 2, false, "W");
+  oled_write_text(&oled, stats_x, stats_y + line_height * 2, false, "A");
   oled_draw_progress_bar(&oled, bar_x, stats_y + line_height * 2 + 1, bar_width,
                          bar_height, state.hydration);
 
-  oled_write_text(&oled, stats_x, stats_y + line_height * 3, false, "C");
+  oled_write_text(&oled, stats_x, stats_y + line_height * 3, false, "L");
   oled_draw_progress_bar(&oled, bar_x, stats_y + line_height * 3 + 1, bar_width,
                          bar_height, state.cleanliness);
 
-  oled_write_text(&oled, stats_x, stats_y + line_height * 4, false, "J");
+  oled_write_text(&oled, stats_x, stats_y + line_height * 4, false, "F");
   oled_draw_progress_bar(&oled, bar_x, stats_y + line_height * 4 + 1, bar_width,
                          bar_height, state.happiness);
 }
