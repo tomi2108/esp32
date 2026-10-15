@@ -14,6 +14,8 @@ t_buffer *buffer_create(void) {
 }
 
 void buffer_destroy(t_buffer *buffer) {
+  if (buffer == NULL)
+    return;
   free(buffer->stream);
   free(buffer);
 }

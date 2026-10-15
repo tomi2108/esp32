@@ -47,4 +47,9 @@ void oled_set_pixel(OLED *oled, uint8_t x, uint8_t y, bool on);
 void oled_display_menu(OLED *oled, Menu menu);
 
 void oled_draw_spinner(OLED *oled, int cx, int cy, int radius);
+void oled_draw_bitmap(OLED *oled, uint8_t x, uint8_t y, uint8_t width,
+                      uint8_t height, const uint8_t *bitmap);
+
+void oled_draw_progress_bar(OLED *oled, uint8_t x, uint8_t y, uint8_t width,
+                            uint8_t height, double value);
 #endif

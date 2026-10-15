@@ -1,5 +1,6 @@
 #include "mqttt.h"
 
+#include <limits.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,6 +35,9 @@ static char *mqtt_strdup(const char *string) {
 }
 
 static void mqtt_reset_message(MqttState *state) {
+  if (state == NULL)
+    return;
+
   free(state->message_topic);
   state->message_topic = NULL;
 
@@ -52,6 +56,8 @@ static void mqtt_subscribe_all(MqttState *state) {
 
 static void mqtt_event_handler(void *args, esp_event_base_t base,
                                int32_t event_id, void *event_data) {
+  (void)base;
+
   MqttState *state = args;
   esp_mqtt_event_handle_t event = event_data;
 
@@ -66,6 +72,7 @@ static void mqtt_event_handler(void *args, esp_event_base_t base,
 
   case MQTT_EVENT_DISCONNECTED:
     state->connected = false;
+    mqtt_reset_message(state);
     break;
 
   case MQTT_EVENT_DATA: {
@@ -73,7 +80,10 @@ static void mqtt_event_handler(void *args, esp_event_base_t base,
       mqtt_reset_message(state);
 
       if (event->topic == NULL || event->topic_len <= 0 ||
-          event->total_data_len < 0 || event->data_len < 0)
+          event->total_data_len < 0 || event->data_len < 0 ||
+          event->current_data_offset < 0 ||
+          event->current_data_offset > event->total_data_len ||
+          event->data_len > event->total_data_len)
         break;
 
       state->message_topic = malloc((size_t)event->topic_len + 1);
@@ -89,9 +99,15 @@ static void mqtt_event_handler(void *args, esp_event_base_t base,
       state->message_total = (size_t)event->total_data_len;
     }
 
-    if (state->message_buffer == NULL || event->data_len < 0 ||
+    if (state->message_topic == NULL || state->message_buffer == NULL ||
+        event->data_len < 0 || event->total_data_len < 0 ||
+        event->current_data_offset < 0 ||
+        (size_t)event->current_data_offset != state->message_buffer->size ||
+        (size_t)event->total_data_len != state->message_total ||
+        state->message_buffer->size > state->message_total ||
         (size_t)event->data_len >
-            state->message_total - state->message_buffer->size) {
+            state->message_total - state->message_buffer->size ||
+        (event->data_len > 0 && event->data == NULL)) {
       mqtt_reset_message(state);
       break;
     }
@@ -134,7 +150,8 @@ static void mqtt_event_handler(void *args, esp_event_base_t base,
   }
 }
 
-MqttClient mqtt_get_client(char *url, char *username, char *password) {
+MqttClient mqtt_get_client(char *url, char *username, char *password,
+                           const char *certificate) {
   MqttClient client = {0};
 
   if (url == NULL)
@@ -152,14 +169,21 @@ MqttClient mqtt_get_client(char *url, char *username, char *password) {
     return (MqttClient){0};
   }
 
+  char client_id[128];
+  snprintf(client_id, sizeof(client_id), "%s-%ld", username, (long)time(NULL));
   esp_mqtt_client_config_t mqtt_cfg = {
-      .broker.verification.crt_bundle_attach = esp_crt_bundle_attach,
       .broker.address.uri = url,
+      .broker.verification =
+          {
+              .crt_bundle_attach =
+                  certificate == NULL ? esp_crt_bundle_attach : NULL,
+              .certificate = certificate,
+          },
       .credentials =
           {
               .username = username,
               .authentication.password = password,
-              .client_id = username,
+              .client_id = client_id,
           },
   };
 

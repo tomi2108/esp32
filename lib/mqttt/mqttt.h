@@ -18,7 +18,8 @@ typedef struct MqttMessage {
 typedef void (*MqttMessageCallback)(MqttClient client,
                                     const MqttMessage message);
 
-MqttClient mqtt_get_client(char *url, char *username, char *password);
+MqttClient mqtt_get_client(char *url, char *username, char *password,
+                           const char *certificate);
 
 int mqtt_pub(MqttClient client, const char *topic, const MqttMessage message);
 

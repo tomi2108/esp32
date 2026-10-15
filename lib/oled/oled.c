@@ -245,3 +245,47 @@ void oled_draw_spinner(OLED *oled, int cx, int cy, int radius) {
     draw_dot(oled, x, y, 2, on);
   }
 }
+
+void oled_draw_bitmap(OLED *oled, uint8_t x, uint8_t y, uint8_t width,
+                      uint8_t height, const uint8_t *bitmap) {
+  if (!oled || !bitmap || width == 0 || height == 0)
+    return;
+
+  size_t bytes_per_row = (width + 7) / 8;
+
+  for (uint8_t row = 0; row < height; row++) {
+    for (uint8_t col = 0; col < width; col++) {
+      size_t index = row * bytes_per_row + col / 8;
+      uint8_t mask = 1U << (7 - col % 8);
+      bool on = (bitmap[index] & mask) != 0;
+
+      oled_set_pixel(oled, x + col, y + row, on);
+    }
+  }
+}
+
+void oled_draw_progress_bar(OLED *oled, uint8_t x, uint8_t y, uint8_t width,
+                            uint8_t height, double value) {
+  if (value < 0)
+    value = 0;
+  if (value > 100)
+    value = 100;
+
+  for (uint8_t dx = 0; dx < width; dx++) {
+    oled_set_pixel(oled, x + dx, y, true);
+    oled_set_pixel(oled, x + dx, y + height - 1, true);
+  }
+
+  for (uint8_t dy = 0; dy < height; dy++) {
+    oled_set_pixel(oled, x, y + dy, true);
+    oled_set_pixel(oled, x + width - 1, y + dy, true);
+  }
+
+  uint8_t fill_width = (uint8_t)((width - 2) * value / 100.0);
+
+  for (uint8_t dy = 1; dy < height - 1; dy++) {
+    for (uint8_t dx = 1; dx <= fill_width; dx++) {
+      oled_set_pixel(oled, x + dx, y + dy, true);
+    }
+  }
+}

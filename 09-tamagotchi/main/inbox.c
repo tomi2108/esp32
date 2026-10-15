@@ -1,8 +1,11 @@
 #include "./env.h"
 #include "buzzer.h"
+#include "client.h"
+#include "json.h"
 #include "menu.h"
 #include "mqttt.h"
 #include "oled.h"
+#include "response.h"
 #include "rotary_encoder.h"
 
 #define INBOX_SIZE 500
@@ -11,10 +14,13 @@ extern PassiveBuzzer buzzer;
 extern int wholenote;
 extern OLED oled;
 extern RotaryEncoder rotary_encoder;
+extern MqttClient mqtt_client;
+extern HttpClient *http_client;
+
 Menu inbox_menu;
 
 typedef struct Message {
-  char *message;
+  const char *content;
   bool is_read;
 } Message;
 
@@ -24,7 +30,7 @@ bool showing_message = false;
 int inbox_count() {
   int c = 0;
   for (int i = 0; i < INBOX_SIZE; i++) {
-    if (inbox[i].message != NULL)
+    if (inbox[i].content != NULL)
       c++;
   }
   return c;
@@ -32,8 +38,8 @@ int inbox_count() {
 
 void inbox_add(Message m) {
   for (int i = 0; i < INBOX_SIZE; i++) {
-    if (inbox[i].message == NULL) {
-      inbox[i].message = m.message;
+    if (inbox[i].content == NULL) {
+      inbox[i].content = m.content;
       inbox[i].is_read = m.is_read;
       return;
     }
@@ -42,23 +48,31 @@ void inbox_add(Message m) {
 
 void inbox_read(int index) { inbox[index].is_read = true; };
 
-void inbox_remove(int index) {
-  free(inbox[index].message);
-  inbox[index].message = NULL;
-};
+void inbox_remove(int index) { inbox[index].content = NULL; };
 
 int inbox_get_unread() {
   int unread = 0;
   for (int i = 0; i < INBOX_SIZE; i++) {
     Message m = inbox[i];
-    if (m.message != NULL && !m.is_read)
+    if (m.content != NULL && !m.is_read)
       unread++;
   }
   return unread;
 };
 
+void decode_message(const t_json_value *message, Message *out) {
+  out->content = json_value_string(json_object_get(message, "content"));
+  const char *read_at = json_value_string(json_object_get(message, "read_at"));
+  if (read_at == NULL)
+    out->is_read = false;
+  else
+    out->is_read = true;
+}
+
 void message_recieved(MqttClient client, MqttMessage message) {
-  Message m = {.message = buffer_read_string(message.buffer), .is_read = false};
+  t_json_value *body = json_parse_buffer(message.buffer);
+  Message m;
+  decode_message(body, &m);
   inbox_add(m);
   mqtt_destroy_message(message);
   buzzer_play_melody(buzzer, wholenote, sound_notification());
@@ -66,8 +80,8 @@ void message_recieved(MqttClient client, MqttMessage message) {
 
 void message_display(Message m) {
   oled_clear(&oled);
-  if (m.message != NULL)
-    oled_write_text(&oled, 0, 0, false, m.message);
+  if (m.content != NULL)
+    oled_write_text(&oled, 0, 0, false, m.content);
   oled_update(&oled);
 };
 
@@ -76,16 +90,15 @@ void select_message(void *context, int32_t index) {
   message_display(inbox[index]);
 };
 
-void inbox_display() {
-
+void inbox_menu_display() {
   static Option o[INBOX_SIZE];
 
   int j = 0;
 
   for (int i = 0; i < INBOX_SIZE; i++) {
-    if (inbox[i].message != NULL) {
+    if (inbox[i].content != NULL) {
       o[j] = (Option){
-          .key = inbox[i].message,
+          .key = (char *)inbox[i].content,
           .value = i,
       };
       j++;
@@ -99,18 +112,24 @@ void inbox_display() {
   oled_update(&oled);
 }
 
-void mqtt_connect() {
-  MqttClient client = mqtt_get_client(MQTT_URL, MQTT_USERNAME, MQTT_PASSWORD);
-  mqtt_sub(client, RECIPIENT_ID, message_recieved);
+void inbox_fetch() {
+  Response *res = client_send_get(http_client, "/inbox/" RECIPIENT_ID);
+  t_json_value *inbox_res = json_parse_buffer(res->body);
+
+  for (int i = 0; i < json_array_size(inbox_res); i++) {
+    const t_json_value *message = json_array_get(inbox_res, i);
+    decode_message(message, &inbox[i]);
+  };
 }
 
-void inbox_on_boot() {
-  mqtt_connect();
+void inbox_init() {
+  mqtt_sub(mqtt_client, "/message/" RECIPIENT_ID, message_recieved);
   inbox_menu.buzzer = &buzzer;
   inbox_menu.on_select = select_message;
+  inbox_fetch();
 }
 
-void inbox_update() {
+void inbox_display() {
   // TODO: add a way to go back to menu
   while (1) {
     if (!showing_message) {
@@ -122,7 +141,7 @@ void inbox_update() {
         continue;
       }
 
-      inbox_display();
+      inbox_menu_display();
       RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
 
       if (direction == ROTARY_CLOCKWISE)
