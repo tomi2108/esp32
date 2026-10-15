@@ -10,14 +10,14 @@
 #include "response.h"
 #include "rotary_encoder.h"
 
-#define MAX_INVENTORY_SIZE 150
+#define TOOLBAR_LENGTH 3
 
 extern PassiveBuzzer buzzer;
 extern int wholenote;
 extern OLED oled;
 extern RotaryEncoder rotary_encoder;
 extern MqttClient mqtt_client;
-Option toolbar_options[3] = {
+Option toolbar_options[TOOLBAR_LENGTH] = {
     {.key = "Inbox", .value = 0},
     {.key = "Sleep", .value = 1},
     {.key = "Hydrate", .value = 2},
@@ -31,7 +31,7 @@ void select_toolbar(void *ctx, int32_t value) {
   case 1:
     action_sleep();
     break;
-  case 3:
+  case 2:
     action_hydrate();
     break;
   default:
@@ -43,7 +43,7 @@ Menu toolbar = {.buzzer = &buzzer,
                 .current = 0,
                 .selected = -1,
                 .on_select = select_toolbar,
-                .length = 2,
+                .length = TOOLBAR_LENGTH,
                 .options = toolbar_options};
 
 void toolbar_display() {
@@ -52,7 +52,7 @@ void toolbar_display() {
   oled_write_text(&oled, oled.font.width + 4, oled.height - oled.font.height,
                   toolbar.current == 1, "S");
   oled_write_text(&oled, oled.font.width * 2 + 8,
-                  oled.height - oled.font.height, toolbar.current == 1, "H");
+                  oled.height - oled.font.height, toolbar.current == 2, "H");
 
   RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
   if (direction == ROTARY_COUNTERCLOCKWISE)
