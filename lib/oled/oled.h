@@ -21,6 +21,10 @@
 #define OLED_MAX_WIDTH 128
 #define OLED_MAX_HEIGHT 128
 #define OLED_BUFFER_SIZE ((OLED_MAX_WIDTH * OLED_MAX_HEIGHT) / 8)
+typedef enum {
+  OLED_CONTROLLER_SSD1306,
+  OLED_CONTROLLER_SH1106,
+} OLEDController;
 
 typedef struct OLED {
   i2c_master_bus_handle_t bus;
@@ -29,12 +33,14 @@ typedef struct OLED {
   uint8_t height;
   uint8_t buffer[OLED_BUFFER_SIZE];
   Font font;
+  OLEDController controller;
 } OLED;
 
 void oled_clear(OLED *oled);
 void oled_update(OLED *oled);
+
 void oled_init(OLED *oled, uint8_t width, uint8_t height, gpio_num_t sda,
-               gpio_num_t scl);
+               gpio_num_t scl, OLEDController controller);
 
 void oled_write_text(OLED *oled, uint8_t x, uint8_t y, bool inverted,
                      const char *format, ...);

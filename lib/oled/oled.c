@@ -21,48 +21,54 @@ static void oled_write_commands(OLED *oled, const uint8_t *commands,
 }
 
 void oled_init(OLED *oled, uint8_t width, uint8_t height, gpio_num_t sda,
-               gpio_num_t scl) {
+               gpio_num_t scl, OLEDController controller) {
   oled->bus = i2c_bus_init(sda, scl);
   oled->device = i2c_device_init(oled->bus, OLED_ADDR, 100000);
   oled->width = width;
   oled->height = height;
   oled->font = font_default();
+  oled->controller = controller;
 
   uint8_t multiplex = height - 1;
-  uint8_t configuration[] = {
-      0xAE, // Display OFF
-      0xD5,
-      0x80, // Set display clock divide ratio / oscillator frequency
-      0xA8,
-      multiplex, // Set multiplex ratio
-      0xD3,
-      0x00, // Set display offset to 0
-      0x40, // Set display start line to 0
-      0x8D,
-      0x14, // Enable charge pump
-      0x20,
-      0x00, // Set horizontal addressing mode
-      0xA1, // Segment remap
-      0xC8, // Reverse COM output scan direction
-      0xDA, // Set COM pins hardware configuration
-      height == 32 ? 0x02 : 0x12,
-      0x81,
-      0x7F, // Set contrast
-      0xD9,
-      0xF1, // Set pre-charge period
-      0xDB,
-      0x40, // Set VCOMH deselect level
-      0xA4, // Display follows RAM contents
-      0xA6, // Normal display mode
-      0x21,
-      0x00, // Set column address range
-      width - 1,
-      0x22,
-      0x00, // Set page address range
-      (height + 7) / 8 - 1,
-      0xAF, // Display ON
+
+  uint8_t common[] = {
+      0xAE, 0xD5, 0x80, 0xA8, multiplex, 0xD3, 0x00,
+      0x40, 0x8D, 0x14, 0xA1, 0xC8,      0xDA, height == 32 ? 0x02 : 0x12,
+      0x81, 0x7F, 0xD9, 0xF1, 0xDB,      0x40, 0xA4,
+      0xA6,
   };
-  oled_write_commands(oled, configuration, sizeof(configuration));
+
+  oled_write_commands(oled, common, sizeof(common));
+
+  if (controller == OLED_CONTROLLER_SSD1306) {
+    uint8_t addressing[] = {
+        0x20,
+        0x00,
+        0x21,
+        0x00,
+        (uint8_t)(width - 1),
+        0x22,
+        0x00,
+        (uint8_t)((height + 7) / 8 - 1),
+    };
+
+    oled_write_commands(oled, addressing, sizeof(addressing));
+  }
+
+  if (controller == OLED_CONTROLLER_SH1106) {
+    uint8_t addressing[] = {
+        0xAD,
+        0x8B, // Enable DC-DC converter
+        0xA8,
+        multiplex,
+    };
+
+    oled_write_commands(oled, addressing, sizeof(addressing));
+  }
+
+  uint8_t display_on = 0xAF;
+  oled_write_commands(oled, &display_on, 1);
+
   oled_clear(oled);
   oled_update(oled);
 }
@@ -140,20 +146,59 @@ void oled_write_text(OLED *oled, uint8_t x, uint8_t y, bool inverted,
     text++;
   }
 }
-
 void oled_update(OLED *oled) {
   uint8_t data[17];
-  data[0] = 0x40;
-  size_t size = oled->width * ((oled->height + 7) / 8);
+  size_t pages = (oled->height + 7) / 8;
 
-  for (size_t offset = 0; offset < size;) {
-    size_t count = size - offset;
-    if (count > sizeof(data) - 1)
-      count = sizeof(data) - 1;
-    for (size_t i = 0; i < count; i++)
-      data[i + 1] = oled->buffer[offset + i];
-    i2c_write(oled->device, data, count + 1);
-    offset += count;
+  if (oled->controller == OLED_CONTROLLER_SSD1306) {
+    uint8_t addressing[] = {
+        0x21, 0x00, (uint8_t)(oled->width - 1),
+        0x22, 0x00, (uint8_t)(pages - 1),
+    };
+
+    oled_write_commands(oled, addressing, sizeof(addressing));
+
+    data[0] = 0x40;
+    size_t size = oled->width * pages;
+
+    for (size_t offset = 0; offset < size;) {
+      size_t count = size - offset;
+
+      if (count > sizeof(data) - 1)
+        count = sizeof(data) - 1;
+
+      memcpy(data + 1, oled->buffer + offset, count);
+      i2c_write(oled->device, data, count + 1);
+      offset += count;
+    }
+
+    return;
+  }
+
+  if (oled->controller == OLED_CONTROLLER_SH1106) {
+    for (size_t page = 0; page < pages; page++) {
+      uint8_t commands[] = {
+          (uint8_t)(0xB0 | page),
+          0x02, // Lower column address; offset 2
+          0x10, // Upper column address
+      };
+
+      oled_write_commands(oled, commands, sizeof(commands));
+
+      data[0] = 0x40;
+
+      for (size_t offset = 0; offset < oled->width;) {
+        size_t count = oled->width - offset;
+
+        if (count > sizeof(data) - 1)
+          count = sizeof(data) - 1;
+
+        memcpy(data + 1, oled->buffer + page * oled->width + offset, count);
+
+        i2c_write(oled->device, data, count + 1);
+        offset += count;
+      }
+    }
   }
 }
 
