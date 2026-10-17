@@ -113,36 +113,47 @@ void inbox_menu_display() {
 }
 
 void inbox_fetch() {
-  Response *res = client_send_get(http_client, "/inbox/" RECIPIENT_ID);
+  char path[32];
+  snprintf(path, sizeof(path), "/inbox/%d", RECIPIENT_ID);
+  Response *res = client_send_get(http_client, path);
   t_json_value *inbox_res = json_parse_buffer(res->body);
-
   for (int i = 0; i < json_array_size(inbox_res); i++) {
     const t_json_value *message = json_array_get(inbox_res, i);
     decode_message(message, &inbox[i]);
-  };
+  }
 }
 
 void inbox_init() {
-  mqtt_sub(mqtt_client, "/message/" RECIPIENT_ID, message_recieved);
+  char topic[32];
+  snprintf(topic, sizeof(topic), "/message/%d", RECIPIENT_ID);
+  mqtt_sub(mqtt_client, topic, message_recieved);
   inbox_menu.buzzer = &buzzer;
   inbox_menu.on_select = select_message;
   inbox_fetch();
 }
 
 void inbox_display() {
-  // TODO: add a way to go back to menu
-  while (1) {
+  bool back = false;
+  while (!back) {
+    RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
+    RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
+
+    if (click == ROTARY_CLICK_DOUBLE) {
+      back = true;
+      continue;
+    }
+
     if (!showing_message) {
       int count = inbox_count();
       if (count == 0) {
         oled_clear(&oled);
         oled_write_text(&oled, 0, oled.height / 2 - 3, false, "Inbox empty");
         oled_update(&oled);
+        vTaskDelay(pdMS_TO_TICKS(100));
         continue;
       }
 
       inbox_menu_display();
-      RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
 
       if (direction == ROTARY_CLOCKWISE)
         menu_next(&inbox_menu);
@@ -150,12 +161,12 @@ void inbox_display() {
       if (direction == ROTARY_COUNTERCLOCKWISE)
         menu_prev(&inbox_menu);
 
-      if (rotary_encoder_is_pressed(&rotary_encoder)) {
+      if (click == ROTARY_CLICK_SINGLE) {
         rotary_encoder_wait_for_release(&rotary_encoder);
         menu_select(&inbox_menu);
       }
     } else {
-      if (rotary_encoder_is_pressed(&rotary_encoder)) {
+      if (click == ROTARY_CLICK_SINGLE) {
         rotary_encoder_wait_for_release(&rotary_encoder);
         showing_message = false;
       }

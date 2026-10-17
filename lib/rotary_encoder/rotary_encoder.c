@@ -1,4 +1,6 @@
 #include "rotary_encoder.h"
+#define DEBOUNCE_MS 30
+#define DOUBLE_CLICK_MS 300
 
 int decode(uint8_t last, uint8_t current) {
   static const int8_t table[4][4] = {
@@ -68,6 +70,45 @@ RotaryDirection rotary_encoder_direction(RotaryEncoder *encoder) {
 
 bool rotary_encoder_is_pressed(RotaryEncoder *encoder) {
   return !gpio_get_level(encoder->button);
+}
+
+RotaryClick rotary_encoder_get_click(RotaryEncoder *encoder) {
+    TickType_t now = xTaskGetTickCount();
+    bool pressed = rotary_encoder_is_pressed(encoder);
+
+    if (pressed && !encoder->was_pressed) {
+        encoder->button_down_tick = now;
+    }
+
+    if (!pressed && encoder->was_pressed) {
+        TickType_t held_ms = pdTICKS_TO_MS(
+            now - encoder->button_down_tick
+        );
+
+        if (held_ms >= DEBOUNCE_MS) {
+            if (encoder->waiting_for_double &&
+                pdTICKS_TO_MS(now - encoder->last_click_tick)
+                    <= DOUBLE_CLICK_MS) {
+                encoder->waiting_for_double = false;
+                encoder->was_pressed = pressed;
+                return ROTARY_CLICK_DOUBLE;
+            }
+
+            encoder->last_click_tick = now;
+            encoder->waiting_for_double = true;
+        }
+    }
+
+    encoder->was_pressed = pressed;
+
+    if (encoder->waiting_for_double &&
+        pdTICKS_TO_MS(now - encoder->last_click_tick)
+            > DOUBLE_CLICK_MS) {
+        encoder->waiting_for_double = false;
+        return ROTARY_CLICK_SINGLE;
+    }
+
+    return ROTARY_CLICK_NONE;
 }
 
 void rotary_encoder_wait_for_release(RotaryEncoder *encoder) {

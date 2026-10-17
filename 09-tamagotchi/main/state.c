@@ -53,7 +53,7 @@ void state_display() {
   const uint8_t stats_y = 14;
 
   const char *name = state.name ? state.name : "Anonymus";
-  if (strcmp(state.status, "sleeping") == 0)
+  if (strcmp(state.status, "sleeping") == 0 && !state.is_dead)
     oled_write_text(&oled, 8, 18, false, "zzzz");
 
   oled_write_text(&oled, 0, 0, false, "%s", name);
@@ -63,7 +63,6 @@ void state_display() {
                      (oled.height - DUCK_HEIGHT) / 2, DUCK_WIDTH, DUCK_HEIGHT,
                      duck_bitmap);
     oled_write_text(&oled, 0, 52, false, "Pet has died");
-    oled_update(&oled);
     return;
   }
 
