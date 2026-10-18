@@ -1,6 +1,7 @@
 #include "./env.h"
 #include "buzzer.h"
 #include "client.h"
+#include "esp_log.h"
 #include "json.h"
 #include "menu.h"
 #include "mqttt.h"
@@ -20,6 +21,7 @@ extern HttpClient *http_client;
 Menu inbox_menu;
 
 typedef struct Message {
+  const char *id;
   const char *content;
   bool is_read;
 } Message;
@@ -39,14 +41,42 @@ int inbox_count() {
 void inbox_add(Message m) {
   for (int i = 0; i < INBOX_SIZE; i++) {
     if (inbox[i].content == NULL) {
-      inbox[i].content = m.content;
-      inbox[i].is_read = m.is_read;
+      inbox[i] = m;
       return;
     }
   }
-};
+}
 
-void inbox_read(int index) { inbox[index].is_read = true; };
+static void mark_as_read_task(void *arg) {
+  char *path = arg;
+  Response *res = client_send_patch(http_client, path);
+  if (res == NULL)
+    ESP_LOGE("inbox", "Failed to mark message as read");
+  free(path);
+  vTaskDelete(NULL);
+}
+
+void mark_as_read(const char *id) {
+  if (id == NULL)
+    return;
+  char *path = malloc(128);
+  if (path == NULL)
+    return;
+  snprintf(path, 128, "/message/%s/read?", id);
+  if (xTaskCreate(mark_as_read_task, "mark_as_read", 4096, path, 5, NULL) !=
+      pdPASS) {
+    free(path);
+    ESP_LOGE("inbox", "Failed to create mark-as-read task");
+  }
+}
+
+void inbox_read(int index) {
+  if (index < 0 || index >= INBOX_SIZE || inbox[index].content == NULL ||
+      inbox[index].is_read)
+    return;
+  mark_as_read(inbox[index].id);
+  inbox[index].is_read = true;
+}
 
 void inbox_remove(int index) { inbox[index].content = NULL; };
 
@@ -61,6 +91,7 @@ int inbox_get_unread() {
 };
 
 void decode_message(const t_json_value *message, Message *out) {
+  out->id = json_value_string(json_object_get(message, "id"));
   out->content = json_value_string(json_object_get(message, "content"));
   const char *read_at = json_value_string(json_object_get(message, "read_at"));
   if (read_at == NULL)
@@ -86,29 +117,40 @@ void message_display(Message m) {
 };
 
 void select_message(void *context, int32_t index) {
+  if (index < 0 || index >= inbox_menu.length)
+    return;
+  int inbox_index = inbox_menu.options[index].value;
+  if (inbox_index < 0 || inbox_index >= INBOX_SIZE)
+    return;
+  inbox_read(inbox_index);
   showing_message = true;
-  message_display(inbox[index]);
-};
+  message_display(inbox[inbox_index]);
+}
 
 void inbox_menu_display() {
   static Option o[INBOX_SIZE];
+  static bool dots[INBOX_SIZE];
 
   int j = 0;
 
   for (int i = 0; i < INBOX_SIZE; i++) {
-    if (inbox[i].content != NULL) {
-      o[j] = (Option){
-          .key = (char *)inbox[i].content,
-          .value = i,
-      };
-      j++;
-    }
+    if (inbox[i].content == NULL)
+      continue;
+
+    o[j] = (Option){
+        .key = (char *)inbox[i].content,
+        .value = i,
+    };
+
+    dots[j] = !inbox[i].is_read;
+    j++;
   }
 
   inbox_menu.on_select = select_message;
-  inbox_menu.length = inbox_count();
+  inbox_menu.length = j;
   inbox_menu.options = o;
-  oled_display_menu(&oled, inbox_menu);
+
+  oled_display_menu_with_dots(&oled, inbox_menu, dots);
   oled_update(&oled);
 }
 
