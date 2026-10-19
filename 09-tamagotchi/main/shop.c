@@ -1,6 +1,4 @@
 #include "shop.h"
-#include "client.h"
-#include "json.h"
 
 extern PassiveBuzzer buzzer;
 extern int wholenote;
@@ -13,7 +11,12 @@ extern bool hide_toolbar;
 const char *starts_at;
 const char *ends_at;
 ShopItem shop[MAX_SHOP_SIZE];
-static int shop_size;
+static int32_t shop_size;
+
+static char shop_labels[MAX_SHOP_SIZE][64];
+static char shop_prices[MAX_SHOP_SIZE][12];
+static const char *shop_price_ptrs[MAX_SHOP_SIZE];
+static const uint8_t *shop_bitmaps[MAX_SHOP_SIZE];
 
 static Option shop_options[MAX_SHOP_SIZE];
 static Menu shop_menu = {
@@ -36,18 +39,45 @@ void decode_item(const t_json_value *body, ShopItem *out) {
   out->rarity = json_value_string(json_object_get(body, "rarity"));
 }
 
-void shop_get() {
-  Response *res = client_send_get(http_client, "/shop");
-  t_json_value *body = json_parse_buffer(res->body);
-  const t_json_value *items = json_object_get(body, "items");
-  starts_at = json_value_string(json_object_get(body, "startsAt"));
-  ends_at = json_value_string(json_object_get(body, "endsAt"));
-
-  shop_size = json_array_size(items);
-  for (int i = 0; i < shop_size; i++) {
-    const t_json_value *item = json_array_get(items, i);
-    decode_item(item, &shop[i]);
-  };
+void shop_get(void) {
+  // Response *shop_res = client_send_get(http_client, "/shop");
+  // t_json_value *shop_body = json_parse_buffer(shop_res->body);
+  //
+  // if (!shop_body)
+  //   return;
+  //
+  // const t_json_value *items = json_object_get(shop_body, "items");
+  //
+  // int count = json_array_size(items);
+  //
+  // starts_at = json_value_string(json_object_get(shop_body, "startsAt"));
+  // ends_at = json_value_string(json_object_get(shop_body, "endsAt"));
+  //
+  // if (count > MAX_SHOP_SIZE)
+  //   count = MAX_SHOP_SIZE;
+  //
+  // shop_size = count;
+  //
+  // for (int i = 0; i < shop_size; i++) {
+  //   const t_json_value *item = json_array_get(items, i);
+  //
+  //   decode_item(item, &shop[i]);
+  //
+  //   snprintf(shop_labels[i], sizeof(shop_labels[i]), "%s",
+  //            shop[i].name ? shop[i].name : "Item");
+  //
+  //   snprintf(shop_prices[i], sizeof(shop_prices[i]), "%" PRId32,
+  //   shop[i].price); shop_options[i].key = shop_labels[i];
+  //   shop_options[i].value = shop[i].id;
+  //
+  //   shop_bitmaps[i] = icons_rpg_coin_gold_currency_money_gp();
+  //   shop_price_ptrs[i] = shop_prices[i];
+  // }
+  //
+  // shop_menu.length = shop_size;
+  //
+  // if (shop_menu.current >= shop_size)
+  //   shop_menu.current = shop_size > 0 ? shop_size - 1 : 0;
 }
 
 static void shop_refresh_task(void *arg) {
@@ -67,14 +97,15 @@ static void buy(int32_t item_id) {
   json_object_end(body);
   client_send_post(http_client, json_buffer(body), "/shop");
   shop_refresh_async();
-};
+  wallet_refresh_async();
+}
 
-void display_coins() {};
-void display_refresh_time() {};
+void display_refresh_time(void) {}
 
-void shop_display() {
+void shop_display(void) {
   hide_toolbar = true;
   bool back = false;
+
   shop_menu.current = 0;
   shop_menu.selected = -1;
 
@@ -95,24 +126,22 @@ void shop_display() {
       continue;
     }
 
-    int size = shop_size;
-    if (size > 0) {
-      if (direction == ROTARY_CLOCKWISE)
-        menu_next(&shop_menu);
-      if (direction == ROTARY_COUNTERCLOCKWISE)
-        menu_prev(&shop_menu);
-      if (click == ROTARY_CLICK_SINGLE && shop_menu.current >= 0 &&
-          shop_menu.current < shop_size) {
-        buy(shop_menu.options[shop_menu.current].value);
-      }
-    }
+    if (direction == ROTARY_CLOCKWISE)
+      menu_next(&shop_menu);
+    if (direction == ROTARY_COUNTERCLOCKWISE)
+      menu_prev(&shop_menu);
+    if (click == ROTARY_CLICK_SINGLE && shop_menu.current >= 0 &&
+        shop_menu.current < shop_size)
+      buy(shop_menu.options[shop_menu.current].value);
 
     oled_clear(&oled);
-    oled_display_menu(&oled, shop_menu);
-    display_coins();
+    oled_display_menu_with_bitmaps(&oled, shop_menu, shop_bitmaps,
+                                   shop_price_ptrs, 16, 16);
     display_refresh_time();
     oled_update(&oled);
+
     vTaskDelay(pdMS_TO_TICKS(10));
   }
+
   hide_toolbar = false;
 }

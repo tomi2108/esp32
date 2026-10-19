@@ -1,4 +1,6 @@
 #include "./env.h"
+#include "icons.h"
+#include "shop.h"
 #include "buzzer.h"
 #include "client.h"
 #include "esp_log.h"

@@ -16,6 +16,7 @@
 #include "spinner.h"
 #include "state.h"
 #include "toolbar.h"
+#include "wallet.h"
 #include "wifi.h"
 #include <stdint.h>
 
@@ -57,8 +58,9 @@ static void init() {
 
 void app_main(void) {
   init();
-  inventory_refresh_async();
+  wallet_refresh_async();
   shop_refresh_async();
+  inventory_refresh_async();
 
   while (1) {
     oled_clear(&oled);

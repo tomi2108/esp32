@@ -1,4 +1,5 @@
 #include "inbox.h"
+#include "icons.h"
 
 extern PassiveBuzzer buzzer;
 extern int wholenote;
@@ -22,12 +23,10 @@ int inbox_count() {
 }
 
 void inbox_add(Message m) {
-  for (int i = 0; i < INBOX_SIZE; i++) {
-    if (inbox[i].content == NULL) {
-      inbox[i] = m;
-      return;
-    }
-  }
+  for (int i = INBOX_SIZE - 1; i > 0; i--)
+    inbox[i] = inbox[i - 1];
+
+  inbox[0] = m;
 }
 
 static void mark_as_read_task(void *arg) {
@@ -112,7 +111,7 @@ void select_message(void *context, int32_t index) {
 
 void inbox_menu_display() {
   static Option o[INBOX_SIZE];
-  static bool dots[INBOX_SIZE];
+  static Icon icons[INBOX_SIZE];
 
   int j = 0;
 
@@ -125,7 +124,8 @@ void inbox_menu_display() {
         .value = i,
     };
 
-    dots[j] = !inbox[i].is_read;
+    icons[j] = inbox[i].is_read ? icons_software_email_message_read_opened()
+                                : icons_software_email_message_unread_closed();
     j++;
   }
 
@@ -133,7 +133,8 @@ void inbox_menu_display() {
   inbox_menu.length = j;
   inbox_menu.options = o;
 
-  oled_display_menu_with_dots(&oled, inbox_menu, dots);
+  oled_display_menu_with_bitmaps(&oled, inbox_menu, icons, NULL, ICON_HEIGHT,
+                                 ICON_WIDTH);
   oled_update(&oled);
 }
 

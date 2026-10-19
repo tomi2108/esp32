@@ -1,6 +1,4 @@
 #include "toolbar.h"
-#include "icons.h"
-#include "shop.h"
 
 extern PassiveBuzzer buzzer;
 extern int wholenote;

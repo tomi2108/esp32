@@ -1,7 +1,10 @@
 #include "state.h"
+#include "icons.h"
+#include "oled.h"
 
 extern MqttClient mqtt_client;
 extern OLED oled;
+extern int32_t wallet_coins;
 
 State state;
 
@@ -31,7 +34,7 @@ void display_stats(void) {
   const uint8_t gap = 2;
   const uint8_t cell_width = w + bar_width + gap;
 
-  int stats_x = oled.width - cell_width * 5;
+  int stats_x = oled.width - cell_width * 5 + 10;
   int stats_y = oled.height - h;
 
   Icon icons[5] = {
@@ -46,6 +49,12 @@ void display_stats(void) {
       state.energy,      state.hunger,    state.hydration,
       state.cleanliness, state.happiness,
   };
+
+  Icon wallet_icon = icons_rpg_coin_gold_currency_money_gp();
+  oled_draw_bitmap(&oled, 0, stats_y, w, h, false, wallet_icon);
+  char wallet_label[256];
+  snprintf(wallet_label, sizeof(wallet_label), "%" PRId32, wallet_coins);
+  oled_write_text(&oled, w, stats_y + h / 2, false, "%s", wallet_label);
 
   for (int i = 0; i < 5; i++) {
     uint8_t x = stats_x + i * cell_width;

@@ -2,6 +2,7 @@
 
 #include "./env.h"
 #include "buzzer.h"
+#include "icons.h"
 #include "client.h"
 #include "esp_log.h"
 #include "json.h"

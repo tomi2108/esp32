@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "icons.h"
+#include "wallet.h"
 #include "json.h"
 #include "mqttt.h"
 #include "oled.h"
