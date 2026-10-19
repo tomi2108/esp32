@@ -40,44 +40,44 @@ void decode_item(const t_json_value *body, ShopItem *out) {
 }
 
 void shop_get(void) {
-  // Response *shop_res = client_send_get(http_client, "/shop");
-  // t_json_value *shop_body = json_parse_buffer(shop_res->body);
-  //
-  // if (!shop_body)
-  //   return;
-  //
-  // const t_json_value *items = json_object_get(shop_body, "items");
-  //
-  // int count = json_array_size(items);
-  //
-  // starts_at = json_value_string(json_object_get(shop_body, "startsAt"));
-  // ends_at = json_value_string(json_object_get(shop_body, "endsAt"));
-  //
-  // if (count > MAX_SHOP_SIZE)
-  //   count = MAX_SHOP_SIZE;
-  //
-  // shop_size = count;
-  //
-  // for (int i = 0; i < shop_size; i++) {
-  //   const t_json_value *item = json_array_get(items, i);
-  //
-  //   decode_item(item, &shop[i]);
-  //
-  //   snprintf(shop_labels[i], sizeof(shop_labels[i]), "%s",
-  //            shop[i].name ? shop[i].name : "Item");
-  //
-  //   snprintf(shop_prices[i], sizeof(shop_prices[i]), "%" PRId32,
-  //   shop[i].price); shop_options[i].key = shop_labels[i];
-  //   shop_options[i].value = shop[i].id;
-  //
-  //   shop_bitmaps[i] = icons_rpg_coin_gold_currency_money_gp();
-  //   shop_price_ptrs[i] = shop_prices[i];
-  // }
-  //
-  // shop_menu.length = shop_size;
-  //
-  // if (shop_menu.current >= shop_size)
-  //   shop_menu.current = shop_size > 0 ? shop_size - 1 : 0;
+  Response *shop_res = client_send_get(http_client, "/shop");
+  t_json_value *shop_body = json_parse_buffer(shop_res->body);
+
+  if (!shop_body)
+    return;
+
+  const t_json_value *items = json_object_get(shop_body, "items");
+  int count = json_array_size(items);
+
+  starts_at = json_value_string(json_object_get(shop_body, "startsAt"));
+  ends_at = json_value_string(json_object_get(shop_body, "endsAt"));
+
+  shop_size = 0;
+
+  for (int i = 0; i < count && shop_size < MAX_SHOP_SIZE; i++) {
+    const t_json_value *item = json_array_get(items, i);
+    ShopItem decoded_item;
+    decode_item(item, &decoded_item);
+    if (decoded_item.stock <= 0)
+      continue;
+
+    int index = shop_size++;
+    shop[index] = decoded_item;
+    snprintf(shop_labels[index], sizeof(shop_labels[index]), "%s x%" PRId32,
+             shop[index].name ? shop[index].name : "Item", shop[index].stock);
+    snprintf(shop_prices[index], sizeof(shop_prices[index]), "%" PRId32,
+             shop[index].price * shop[index].stock);
+
+    shop_options[index].key = shop_labels[index];
+    shop_options[index].value = shop[index].id;
+    shop_bitmaps[index] = icons_rpg_coin_gold_currency_money_gp();
+    shop_price_ptrs[index] = shop_prices[index];
+  }
+
+  shop_menu.length = shop_size;
+
+  if (shop_menu.current >= shop_size)
+    shop_menu.current = shop_size > 0 ? shop_size - 1 : 0;
 }
 
 static void shop_refresh_task(void *arg) {

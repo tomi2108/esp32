@@ -31,10 +31,9 @@ void display_stats(void) {
   const uint8_t w = ICON_WIDTH;
   const uint8_t h = ICON_HEIGHT;
   const uint8_t bar_width = 4;
-  const uint8_t gap = 2;
-  const uint8_t cell_width = w + bar_width + gap;
-
-  int stats_x = oled.width - cell_width * 5 + 10;
+  const uint8_t cell_width = w + bar_width;
+  const uint8_t wallet_width = 10;
+  int stats_x = oled.width - cell_width * 5 + wallet_width;
   int stats_y = oled.height - h;
 
   Icon icons[5] = {
@@ -42,7 +41,7 @@ void display_stats(void) {
       icons_food_meat_chicken_leg_drumstick(),
       icons_weather_water_droplet_liquid_rain_element_small(),
       icons_cosmetics_bath_shower_1(),
-      icons_emoji_face_happy(),
+      icons_emoji_face_smiling_smiley(),
   };
 
   double stats[5] = {
