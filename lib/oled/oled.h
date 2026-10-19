@@ -58,7 +58,13 @@ void oled_draw_bitmap(OLED *oled, uint8_t x, uint8_t y, uint8_t width,
                       uint8_t height, bool inverted, const uint8_t *bitmap);
 
 void oled_draw_dot(OLED *oled, int cx, int cy, int radius, bool on);
-void oled_display_menu_with_dots(OLED *oled, Menu menu, const bool *dots);
+void oled_display_menu_with_bitmaps(
+    OLED *oled,
+    Menu menu,
+    const uint8_t *const *bitmaps,
+    const char *const *right_labels,
+    uint8_t bitmap_width,
+    uint8_t bitmap_height);
 void oled_draw_progress_bar(OLED *oled, uint8_t x, uint8_t y, uint8_t width,
                             uint8_t height, double value, bool vertical);
 #endif
