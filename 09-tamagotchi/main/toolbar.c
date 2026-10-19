@@ -39,20 +39,28 @@ Menu toolbar = {.buzzer = &buzzer,
                 .options = toolbar_options};
 
 void toolbar_display() {
-  int h = ICON_HEIGHT;
-  int w = ICON_WIDTH;
-  int dx = w + 4;
-  int x = oled.width - dx * TOOLBAR_LENGTH;
-  int y = oled.height - ICON_HEIGHT;
+  const uint8_t h = ICON_HEIGHT;
+  const uint8_t w = ICON_WIDTH;
+  const uint8_t dx = w + 4;
+  const uint8_t dy = w + 4;
+
+  const uint8_t tb_x = 60;
+  const uint8_t tb_y = 0;
+
   Icon icons[TOOLBAR_LENGTH] = {
       icons_software_email_mailbox_unread_new_messages(),
       icons_rpg_debuff_zz_sleep_status(),
       icons_weather_water_droplet_liquid_rain_element_small(),
       icons_tools_crafting_chest_locked_loot(),
   };
-  for (int i = 0; i < TOOLBAR_LENGTH; i++)
-    oled_draw_bitmap(&oled, x + dx * i, y, w, h, toolbar.current == i,
-                     icons[i]);
+
+  for (int i = 0; i < TOOLBAR_LENGTH; i++) {
+    uint8_t col = i % 3;
+    uint8_t row = i / 3;
+    uint8_t x = tb_x + col * dx;
+    uint8_t y = tb_y + row * dy;
+    oled_draw_bitmap(&oled, x, y, w, h, toolbar.current == i, icons[i]);
+  }
 
   RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
   if (direction == ROTARY_COUNTERCLOCKWISE)

@@ -93,11 +93,17 @@ void oled_write_char_mode(OLED *oled, uint8_t x, uint8_t y, uint32_t codepoint,
   if (!glyph)
     return;
 
-  for (uint8_t column = 0; column < glyph->width; column++) {
-    uint8_t bits = glyph->bitmap[column];
+  uint8_t width = glyph->width;
 
+  if (inverted && glyph->advance > width)
+    width = glyph->advance;
+
+  for (uint8_t column = 0; column < width; column++) {
     for (uint8_t row = 0; row < oled->font.height; row++) {
-      bool on = (bits & (1U << row)) != 0;
+      bool on = false;
+
+      if (column < glyph->width)
+        on = (glyph->bitmap[column] & (1U << row)) != 0;
 
       if (inverted)
         on = !on;
@@ -349,14 +355,14 @@ static void oled_display_menu_internal(OLED *oled, Menu menu,
     memcpy(text, key, text_len);
     text[text_len] = '\0';
 
-    oled_write_text(oled, 2, y + 1, is_selected, "%s", text);
+    oled_write_text(oled, 1, y + 1, is_selected, "%s", text);
 
     for (uint8_t row = 0; row < oled->font.height + 2; row++) {
       oled_set_pixel(oled, 0, y + row, is_selected);
-      oled_set_pixel(oled, text_width + 3, y + row, is_selected);
+      oled_set_pixel(oled, text_width + 1, y + row, is_selected);
     }
 
-    for (uint16_t x = 0; x <= text_width + 3; x++) {
+    for (uint16_t x = 0; x <= text_width + 1; x++) {
       oled_set_pixel(oled, x, y, is_selected);
       oled_set_pixel(oled, x, y + oled->font.height + 1, is_selected);
     }
@@ -364,7 +370,7 @@ static void oled_display_menu_internal(OLED *oled, Menu menu,
     if (dots != NULL && dots[index]) {
       int dot_x = oled->width - 4;
       int dot_y = y + line_height / 2;
-      oled_draw_dot(oled, dot_x, dot_y, 2, true);
+      oled_draw_dot(oled, dot_x, dot_y, 2, !is_selected);
     }
   }
 }

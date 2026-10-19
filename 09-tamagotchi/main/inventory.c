@@ -135,7 +135,7 @@ void inventory_display(void) {
       oled_clear(&oled);
       oled_write_text(&oled, 0, oled.height / 2 - 3, false, "Inventory empty");
       oled_update(&oled);
-      vTaskDelay(pdMS_TO_TICKS(100));
+      vTaskDelay(pdMS_TO_TICKS(10));
       continue;
     }
 

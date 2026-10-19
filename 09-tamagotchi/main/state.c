@@ -30,10 +30,9 @@ void display_stats(void) {
   const uint8_t bar_width = 4;
   const uint8_t gap = 2;
   const uint8_t cell_width = w + bar_width + gap;
-  const uint8_t cell_height = h + 2;
 
-  const uint8_t stats_x = 60;
-  const uint8_t stats_y = 0;
+  int stats_x = oled.width - cell_width * 5;
+  int stats_y = oled.height - h;
 
   Icon icons[5] = {
       icons_software_power_electricity_battery_thunder_lightning_bolt_zap(),
@@ -49,15 +48,10 @@ void display_stats(void) {
   };
 
   for (int i = 0; i < 5; i++) {
-    uint8_t col = i % 3;
-    uint8_t row = i / 3;
-
-    uint8_t x = stats_x + col * cell_width;
-    uint8_t y = stats_y + row * cell_height;
+    uint8_t x = stats_x + i * cell_width;
     uint8_t bar_x = x + w + 1;
-
-    oled_draw_bitmap(&oled, x, y, w, h, false, icons[i]);
-    oled_draw_progress_bar(&oled, bar_x, y, bar_width, h, stats[i], true);
+    oled_draw_bitmap(&oled, x, stats_y, w, h, false, icons[i]);
+    oled_draw_progress_bar(&oled, bar_x, stats_y, bar_width, h, stats[i], true);
   }
 }
 

@@ -19,7 +19,6 @@ static void spinner_task(void *arg) {
 
     oled_clear(spinner_oled);
     oled_draw_spinner(spinner_oled, 64, 32, 10);
-    oled_write_text(spinner_oled, 40, 48, false, "Loading...");
     oled_update(spinner_oled);
 
     oled_unlock();

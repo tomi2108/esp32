@@ -159,6 +159,7 @@ void inbox_init() {
 
 void inbox_display() {
   bool back = false;
+
   while (!back) {
     RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
     RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
@@ -174,7 +175,7 @@ void inbox_display() {
         oled_clear(&oled);
         oled_write_text(&oled, 0, oled.height / 2 - 3, false, "Inbox empty");
         oled_update(&oled);
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(10));
         continue;
       }
 
@@ -197,4 +198,5 @@ void inbox_display() {
       }
     }
   }
+  showing_message = false;
 }
