@@ -1,18 +1,4 @@
-#include "./env.h"
-#include "buzzer.h"
-#include "client.h"
-#include "esp_log.h"
-#include "icons.h"
-#include "inbox.c"
-#include "inventory.h"
-#include "json.h"
-#include "menu.h"
-#include "mqttt.h"
-#include "oled.h"
-#include "response.h"
-#include "rotary_encoder.h"
-
-#define TOOLBAR_LENGTH 4
+#include "toolbar.h"
 
 extern PassiveBuzzer buzzer;
 extern int wholenote;

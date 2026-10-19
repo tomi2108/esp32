@@ -1,12 +1,4 @@
-#include "./env.h"
-#include "buzzer.h"
-#include "client.h"
-#include "json.h"
-#include "menu.h"
-#include "mqttt.h"
-#include "oled.h"
-#include "response.h"
-#include "rotary_encoder.h"
+#include "shop.h"
 
 extern PassiveBuzzer buzzer;
 extern int wholenote;
@@ -14,16 +6,6 @@ extern OLED oled;
 extern RotaryEncoder rotary_encoder;
 extern MqttClient mqtt_client;
 extern HttpClient *http_client;
-
-typedef struct ShopItem {
-  int id;
-  const char *name;
-  const char *type;
-  const char *slot;
-  const char *rarity;
-  int price;
-  int stock;
-} ShopItem;
 
 const char *starts_at;
 const char *ends_at;

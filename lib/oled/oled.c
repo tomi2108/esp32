@@ -261,7 +261,7 @@ void oled_draw_bitmap(OLED *oled, uint8_t x, uint8_t y, uint8_t width,
 }
 
 void oled_draw_progress_bar(OLED *oled, uint8_t x, uint8_t y, uint8_t width,
-                            uint8_t height, double value) {
+                            uint8_t height, double value, bool vertical) {
   if (value < 0)
     value = 0;
   if (value > 100)
@@ -277,22 +277,32 @@ void oled_draw_progress_bar(OLED *oled, uint8_t x, uint8_t y, uint8_t width,
     oled_set_pixel(oled, x + width - 1, y + dy, true);
   }
 
-  uint8_t fill_width = (uint8_t)((width - 2) * value / 100.0);
+  if (vertical) {
+    uint8_t fill_height = (uint8_t)((height - 2) * value / 100.0);
 
-  for (uint8_t dy = 1; dy < height - 1; dy++) {
-    for (uint8_t dx = 1; dx <= fill_width; dx++) {
-      oled_set_pixel(oled, x + dx, y + dy, true);
+    for (uint8_t dy = 1; dy <= fill_height; dy++) {
+      for (uint8_t dx = 1; dx < width - 1; dx++) {
+        oled_set_pixel(oled, x + dx, y + height - 1 - dy, true);
+      }
+    }
+  } else {
+    uint8_t fill_width = (uint8_t)((width - 2) * value / 100.0);
+
+    for (uint8_t dy = 1; dy < height - 1; dy++) {
+      for (uint8_t dx = 1; dx <= fill_width; dx++) {
+        oled_set_pixel(oled, x + dx, y + dy, true);
+      }
     }
   }
 }
+
 static void oled_display_menu_internal(OLED *oled, Menu menu,
                                        const bool *dots) {
   oled_clear(oled);
 
-  uint8_t line_height = oled->font.height + 1;
+  uint8_t line_height = oled->font.line_height;
   uint8_t visible = oled->height / line_height;
   uint8_t scroll_offset = 0;
-  size_t max_chars = oled->width / oled->font.width;
 
   if (menu.length > visible) {
     if (menu.current >= visible / 2)
@@ -303,7 +313,7 @@ static void oled_display_menu_internal(OLED *oled, Menu menu,
   }
 
   for (uint8_t i = 0; i < visible; i++) {
-    uint8_t index = scroll_offset + i;
+    size_t index = scroll_offset + i;
 
     if (index >= menu.length)
       break;
@@ -315,34 +325,38 @@ static void oled_display_menu_internal(OLED *oled, Menu menu,
     uint8_t y = i * line_height;
     bool is_selected = index == menu.current;
 
-    // Reserve space on the right for the status dot.
-    size_t text_max_chars = max_chars > 2 ? max_chars - 2 : max_chars;
-    size_t len = strlen(key);
-    char text[text_max_chars + 1];
+    uint16_t max_width = oled->width - 6;
+    uint16_t text_width = 0;
 
-    if (len > text_max_chars) {
-      if (text_max_chars <= 3) {
-        memset(text, '.', text_max_chars);
-        text[text_max_chars] = '\0';
-      } else {
-        memcpy(text, key, text_max_chars - 3);
-        memcpy(text + text_max_chars - 3, "...", 3);
-        text[text_max_chars] = '\0';
-      }
-    } else {
-      memcpy(text, key, len + 1);
+    const char *cursor = key;
+    while (*cursor != '\0') {
+      const char *next = cursor;
+      uint32_t codepoint = font_decode_next(&next);
+      const FontGlyph *glyph = font_get_glyph(oled->font, codepoint);
+
+      if (glyph == NULL)
+        break;
+
+      if (text_width + glyph->advance > max_width)
+        break;
+
+      text_width += glyph->advance;
+      cursor = next;
     }
 
-    size_t width = strlen(text) * oled->font.width;
+    char text[strlen(key) + 1];
+    size_t text_len = cursor - key;
+    memcpy(text, key, text_len);
+    text[text_len] = '\0';
 
-    oled_write_text(oled, 1, y + 1, is_selected, "%s", text);
+    oled_write_text(oled, 2, y + 1, is_selected, "%s", text);
 
     for (uint8_t row = 0; row < oled->font.height + 2; row++) {
       oled_set_pixel(oled, 0, y + row, is_selected);
-      oled_set_pixel(oled, width + 1, y + row, is_selected);
+      oled_set_pixel(oled, text_width + 3, y + row, is_selected);
     }
 
-    for (uint8_t x = 0; x <= width + 1; x++) {
+    for (uint16_t x = 0; x <= text_width + 3; x++) {
       oled_set_pixel(oled, x, y, is_selected);
       oled_set_pixel(oled, x, y + oled->font.height + 1, is_selected);
     }

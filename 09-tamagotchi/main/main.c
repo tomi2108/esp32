@@ -13,8 +13,8 @@
 #include "oled.h"
 #include "rotary_encoder.h"
 #include "spinner.h"
-#include "state.c"
-#include "toolbar.c"
+#include "state.h"
+#include "toolbar.h"
 #include "wifi.h"
 #include <stdint.h>
 

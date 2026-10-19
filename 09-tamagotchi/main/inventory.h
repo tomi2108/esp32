@@ -21,5 +21,13 @@
 #define MAX_INVENTORY_SIZE 150
 #define INVENTORY_LABEL_SIZE 64
 
+typedef struct {
+  int32_t id;
+  const char *name;
+  const char *type;
+  const char *slot;
+  int32_t quantity;
+} InventoryItem;
+
 void inventory_refresh_async(void);
 void inventory_display(void);

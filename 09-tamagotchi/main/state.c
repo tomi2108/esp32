@@ -1,28 +1,7 @@
-#include <math.h>
-#include <stdbool.h>
-#include <stdint.h>
-
-#include "icons.h"
-#include "json.h"
-#include "mqttt.h"
-#include "oled.h"
-
-#define DUCK_WIDTH 16
-#define DUCK_HEIGHT 16
+#include "state.h"
 
 extern MqttClient mqtt_client;
 extern OLED oled;
-
-typedef struct State {
-  const char *name;
-  double energy;
-  double hunger;
-  double hydration;
-  double cleanliness;
-  double happiness;
-  bool is_dead;
-  const char *status;
-} State;
 
 State state;
 
@@ -44,6 +23,7 @@ static const uint8_t duck_bitmap[DUCK_HEIGHT * 2] = {
     0x9F, 0xF9, 0x9F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFC, 0xF0, 0x7F, 0xF8,
     0x7F, 0xF8, 0x3F, 0xF0, 0x1F, 0xE0, 0x0C, 0x60, 0x00, 0x00,
 };
+
 void display_stats(void) {
   const uint8_t w = ICON_WIDTH;
   const uint8_t h = ICON_HEIGHT;
@@ -81,8 +61,7 @@ void display_stats(void) {
   }
 }
 
-void state_display() {
-
+void display_pet() {
   const char *name = state.name ? state.name : "Anonymus";
   if (strcmp(state.status, "sleeping") == 0 && !state.is_dead)
     oled_write_text(&oled, 8, 18, false, "zzzz");
@@ -98,7 +77,10 @@ void state_display() {
   }
 
   oled_draw_bitmap(&oled, 8, 26, DUCK_WIDTH, DUCK_HEIGHT, false, duck_bitmap);
-  display_stats();
 }
 
+void state_display() {
+  display_pet();
+  display_stats();
+}
 void state_init() { mqtt_sub(mqtt_client, "/state", update_state); }

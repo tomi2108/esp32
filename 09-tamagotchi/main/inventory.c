@@ -5,14 +5,6 @@ extern PassiveBuzzer buzzer;
 extern RotaryEncoder rotary_encoder;
 extern HttpClient *http_client;
 
-typedef struct {
-  int32_t id;
-  const char *name;
-  const char *type;
-  const char *slot;
-  int32_t quantity;
-} InventoryItem;
-
 static InventoryItem inventory[MAX_INVENTORY_SIZE];
 static int inventory_size;
 
