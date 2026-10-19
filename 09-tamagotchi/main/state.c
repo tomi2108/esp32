@@ -44,16 +44,16 @@ static const uint8_t duck_bitmap[DUCK_HEIGHT * 2] = {
     0x9F, 0xF9, 0x9F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFC, 0xF0, 0x7F, 0xF8,
     0x7F, 0xF8, 0x3F, 0xF0, 0x1F, 0xE0, 0x0C, 0x60, 0x00, 0x00,
 };
-
-void display_stats() {
-  const uint8_t h = ICON_HEIGHT;
+void display_stats(void) {
   const uint8_t w = ICON_WIDTH;
+  const uint8_t h = ICON_HEIGHT;
+  const uint8_t bar_width = 4;
+  const uint8_t gap = 2;
+  const uint8_t cell_width = w + bar_width + gap;
+  const uint8_t cell_height = h + 2;
+
   const uint8_t stats_x = 60;
   const uint8_t stats_y = 0;
-  const uint8_t dy = h + 1;
-  const uint8_t bar_x = stats_x + w + 1;
-  const uint8_t bar_width = 50;
-  const uint8_t bar_height = h;
 
   Icon icons[5] = {
       icons_software_power_electricity_battery_thunder_lightning_bolt_zap(),
@@ -62,13 +62,22 @@ void display_stats() {
       icons_cosmetics_bath_shower_1(),
       icons_emoji_face_happy(),
   };
-  double stats[5] = {state.energy, state.hunger, state.hydration,
-                     state.cleanliness, state.happiness};
+
+  double stats[5] = {
+      state.energy,      state.hunger,    state.hydration,
+      state.cleanliness, state.happiness,
+  };
 
   for (int i = 0; i < 5; i++) {
-    oled_draw_bitmap(&oled, stats_x, stats_y + dy * i, w, h, false, icons[i]);
-    oled_draw_progress_bar(&oled, bar_x, stats_y + dy * i, bar_width,
-                           bar_height, stats[i]);
+    uint8_t col = i % 3;
+    uint8_t row = i / 3;
+
+    uint8_t x = stats_x + col * cell_width;
+    uint8_t y = stats_y + row * cell_height;
+    uint8_t bar_x = x + w + 1;
+
+    oled_draw_bitmap(&oled, x, y, w, h, false, icons[i]);
+    oled_draw_progress_bar(&oled, bar_x, y, bar_width, h, stats[i], true);
   }
 }
 
