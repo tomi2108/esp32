@@ -4,6 +4,7 @@ extern OLED oled;
 extern PassiveBuzzer buzzer;
 extern RotaryEncoder rotary_encoder;
 extern HttpClient *http_client;
+extern bool hide_toolbar;
 
 static InventoryItem inventory[MAX_INVENTORY_SIZE];
 static int inventory_size;
@@ -19,8 +20,6 @@ static Menu inventory_menu = {
 };
 
 static char inventory_labels[MAX_INVENTORY_SIZE][INVENTORY_LABEL_SIZE];
-
-bool inventory_is_open = false;
 
 static void decode_inventory_item(const t_json_value *body,
                                   InventoryItem *out) {
@@ -101,7 +100,7 @@ static void inventory_remove(int index) {
   inventory_size--;
 }
 
-static void feed(int32_t item_id) {
+static void use(int32_t item_id) {
   // TODO: equip if equippable
   int index = inventory_find(item_id);
   if (index < 0 || inventory[index].quantity <= 0)
@@ -116,7 +115,7 @@ static void feed(int32_t item_id) {
 }
 
 void inventory_display(void) {
-  inventory_is_open = true;
+  hide_toolbar = true;
   bool back = false;
 
   inventory_menu.current = 0;
@@ -147,7 +146,7 @@ void inventory_display(void) {
         menu_prev(&inventory_menu);
       if (click == ROTARY_CLICK_SINGLE && inventory_menu.current >= 0 &&
           inventory_menu.current < inventory_size) {
-        feed(inventory_menu.options[inventory_menu.current].value);
+        use(inventory_menu.options[inventory_menu.current].value);
       }
     }
 
@@ -156,5 +155,5 @@ void inventory_display(void) {
     oled_update(&oled);
     vTaskDelay(pdMS_TO_TICKS(10));
   }
-  inventory_is_open = false;
+  hide_toolbar = false;
 }

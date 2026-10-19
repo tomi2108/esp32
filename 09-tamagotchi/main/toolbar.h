@@ -12,6 +12,6 @@
 #include "response.h"
 #include "rotary_encoder.h"
 
-#define TOOLBAR_LENGTH 4
+#define TOOLBAR_LENGTH 5
 
 void toolbar_display(void);

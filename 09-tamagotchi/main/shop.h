@@ -9,6 +9,8 @@
 #include "response.h"
 #include "rotary_encoder.h"
 
+#define MAX_SHOP_SIZE 50
+
 typedef struct ShopItem {
   int id;
   const char *name;
@@ -18,3 +20,6 @@ typedef struct ShopItem {
   int price;
   int stock;
 } ShopItem;
+
+void shop_refresh_async(void);
+void shop_display(void);

@@ -1,4 +1,6 @@
 #include "toolbar.h"
+#include "icons.h"
+#include "shop.h"
 
 extern PassiveBuzzer buzzer;
 extern int wholenote;
@@ -6,10 +8,9 @@ extern OLED oled;
 extern RotaryEncoder rotary_encoder;
 extern MqttClient mqtt_client;
 Option toolbar_options[TOOLBAR_LENGTH] = {
-    {.key = "Inbox", .value = 0},
-    {.key = "Sleep", .value = 1},
-    {.key = "Hydrate", .value = 2},
-    {.key = "Inventory", .value = 3},
+    {.key = "Inbox", .value = 0},   {.key = "Sleep", .value = 1},
+    {.key = "Hydrate", .value = 2}, {.key = "Inventory", .value = 3},
+    {.key = "Shop", .value = 4},
 };
 
 void select_toolbar(void *ctx, int32_t value) {
@@ -25,6 +26,9 @@ void select_toolbar(void *ctx, int32_t value) {
     break;
   case 3:
     inventory_display();
+    break;
+  case 4:
+    shop_display();
     break;
   default:
     break;
@@ -51,8 +55,7 @@ void toolbar_display() {
       icons_software_email_mailbox_unread_new_messages(),
       icons_rpg_debuff_zz_sleep_status(),
       icons_weather_water_droplet_liquid_rain_element_small(),
-      icons_tools_crafting_chest_locked_loot(),
-  };
+      icons_tools_crafting_chest_locked_loot(), icons_software_shopping_cart()};
 
   for (int i = 0; i < TOOLBAR_LENGTH; i++) {
     uint8_t col = i % 3;

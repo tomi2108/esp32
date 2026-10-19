@@ -12,14 +12,15 @@
 #include "mqttt.h"
 #include "oled.h"
 #include "rotary_encoder.h"
+#include "shop.h"
 #include "spinner.h"
 #include "state.h"
 #include "toolbar.h"
 #include "wifi.h"
 #include <stdint.h>
 
+bool hide_toolbar;
 extern State state;
-extern bool inventory_is_open;
 extern const uint8_t certificate[] asm("_binary_mosquitto_ca_crt_start");
 
 PassiveBuzzer buzzer;
@@ -57,10 +58,12 @@ static void init() {
 void app_main(void) {
   init();
   inventory_refresh_async();
+  shop_refresh_async();
+
   while (1) {
     oled_clear(&oled);
     state_display();
-    if (!state.is_dead && !inventory_is_open) {
+    if (!state.is_dead && !hide_toolbar) {
       toolbar_display();
     }
 
