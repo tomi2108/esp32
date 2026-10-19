@@ -46,12 +46,14 @@ static const uint8_t duck_bitmap[DUCK_HEIGHT * 2] = {
 };
 
 void display_stats() {
-  const uint8_t stats_x = 65;
-  const uint8_t stats_y = 7;
-  const uint8_t dy = ICON_HEIGHT + 1;
-  const uint8_t bar_x = stats_x + ICON_WIDTH + 1;
-  const uint8_t bar_width = 45;
-  const uint8_t bar_height = ICON_HEIGHT;
+  const uint8_t h = ICON_HEIGHT;
+  const uint8_t w = ICON_WIDTH;
+  const uint8_t stats_x = 60;
+  const uint8_t stats_y = 0;
+  const uint8_t dy = h + 1;
+  const uint8_t bar_x = stats_x + w + 1;
+  const uint8_t bar_width = 50;
+  const uint8_t bar_height = h;
 
   Icon icons[5] = {
       icons_software_power_electricity_battery_thunder_lightning_bolt_zap(),
@@ -64,8 +66,7 @@ void display_stats() {
                      state.cleanliness, state.happiness};
 
   for (int i = 0; i < 5; i++) {
-    oled_draw_bitmap(&oled, stats_x, stats_y + dy * i, ICON_WIDTH, ICON_HEIGHT,
-                     false, icons[i]);
+    oled_draw_bitmap(&oled, stats_x, stats_y + dy * i, w, h, false, icons[i]);
     oled_draw_progress_bar(&oled, bar_x, stats_y + dy * i, bar_width,
                            bar_height, stats[i]);
   }

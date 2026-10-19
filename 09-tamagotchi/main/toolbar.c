@@ -12,7 +12,7 @@
 #include "response.h"
 #include "rotary_encoder.h"
 
-#define TOOLBAR_LENGTH 4
+#define TOOLBAR_LENGTH 3
 
 extern PassiveBuzzer buzzer;
 extern int wholenote;
@@ -22,7 +22,7 @@ extern MqttClient mqtt_client;
 Option toolbar_options[TOOLBAR_LENGTH] = {
     {.key = "Inbox", .value = 0},
     {.key = "Sleep", .value = 1},
-    {.key = "Hydrate", .value = 2},
+    // {.key = "Hydrate", .value = 2},
     {.key = "Inventory", .value = 3},
 };
 
@@ -34,10 +34,10 @@ void select_toolbar(void *ctx, int32_t value) {
   case 1:
     action_sleep();
     break;
+  // case 2:
+  //   action_hydrate();
+  //   break;
   case 2:
-    action_hydrate();
-    break;
-  case 3:
     inventory_display();
     break;
   default:
@@ -60,7 +60,7 @@ void toolbar_display() {
   Icon icons[TOOLBAR_LENGTH] = {
       icons_software_email_mailbox_unread_new_messages(),
       icons_rpg_debuff_zz_sleep_status(),
-      icons_weather_water_droplet_liquid_rain_element_small(),
+      // icons_weather_water_droplet_liquid_rain_element_small(),
       icons_tools_crafting_chest_locked_loot(),
   };
   for (int i = 0; i < TOOLBAR_LENGTH; i++)
