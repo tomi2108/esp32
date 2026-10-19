@@ -2,6 +2,7 @@
 #include "buzzer.h"
 #include "client.h"
 #include "esp_log.h"
+#include "icons.h"
 #include "inbox.c"
 #include "inventory.h"
 #include "json.h"
@@ -11,7 +12,7 @@
 #include "response.h"
 #include "rotary_encoder.h"
 
-#define TOOLBAR_LENGTH 4
+#define TOOLBAR_LENGTH 2
 
 extern PassiveBuzzer buzzer;
 extern int wholenote;
@@ -21,8 +22,8 @@ extern MqttClient mqtt_client;
 Option toolbar_options[TOOLBAR_LENGTH] = {
     {.key = "Inbox", .value = 0},
     {.key = "Sleep", .value = 1},
-    {.key = "Hydrate", .value = 2},
-    {.key = "Feed", .value = 3},
+    // {.key = "Hydrate", .value = 2},
+    // {.key = "Feed", .value = 3},
 };
 
 void select_toolbar(void *ctx, int32_t value) {
@@ -52,15 +53,16 @@ Menu toolbar = {.buzzer = &buzzer,
                 .options = toolbar_options};
 
 void toolbar_display() {
-  oled_write_text(&oled, 0, oled.height - oled.font.height,
-                  toolbar.current == 0, "I");
-  oled_write_text(&oled, oled.font.width + 4, oled.height - oled.font.height,
-                  toolbar.current == 1, "S");
-  oled_write_text(&oled, (oled.font.width + 4) * 2,
-                  oled.height - oled.font.height, toolbar.current == 2, "H");
-
-  oled_write_text(&oled, (oled.font.width + 4) * 3,
-                  oled.height - oled.font.height, toolbar.current == 3, "F");
+  int y = oled.height - ICON_HEIGHT;
+  oled_draw_bitmap(&oled, 0, y, ICON_WIDTH, ICON_HEIGHT, toolbar.current == 0,
+                   icons_email_unread());
+  oled_draw_bitmap(&oled, ICON_WIDTH + 4, y, ICON_WIDTH, ICON_HEIGHT,
+                   toolbar.current == 1, icons_email_read());
+  // oled_write_text(&oled, (oled.font.width + 4) * 2,
+  //                 oled.height - oled.font.height, toolbar.current == 2, "H");
+  //
+  // oled_write_text(&oled, (oled.font.width + 4) * 3,
+  //                 oled.height - oled.font.height, toolbar.current == 3, "F");
 
   RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
   if (direction == ROTARY_COUNTERCLOCKWISE)

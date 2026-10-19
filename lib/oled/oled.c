@@ -234,7 +234,7 @@ void oled_draw_spinner(OLED *oled, int cx, int cy, int radius) {
 }
 
 void oled_draw_bitmap(OLED *oled, uint8_t x, uint8_t y, uint8_t width,
-                      uint8_t height, const uint8_t *bitmap) {
+                      uint8_t height, bool inverted, const uint8_t *bitmap) {
   if (!oled || !bitmap || width == 0 || height == 0)
     return;
 
@@ -245,8 +245,8 @@ void oled_draw_bitmap(OLED *oled, uint8_t x, uint8_t y, uint8_t width,
       size_t index = row * bytes_per_row + col / 8;
       uint8_t mask = 1U << (7 - col % 8);
       bool on = (bitmap[index] & mask) != 0;
-
-      oled_set_pixel(oled, x + col, y + row, on);
+      bool pixel = inverted ? !on : on;
+      oled_set_pixel(oled, x + col, y + row, pixel);
     }
   }
 }

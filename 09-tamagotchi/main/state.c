@@ -61,12 +61,12 @@ void state_display() {
   if (state.is_dead) {
     oled_draw_bitmap(&oled, (oled.width - DUCK_WIDTH) / 2,
                      (oled.height - DUCK_HEIGHT) / 2, DUCK_WIDTH, DUCK_HEIGHT,
-                     duck_bitmap);
+                     false, duck_bitmap);
     oled_write_text(&oled, 0, 52, false, "Pet has died");
     return;
   }
 
-  oled_draw_bitmap(&oled, 8, 26, DUCK_WIDTH, DUCK_HEIGHT, duck_bitmap);
+  oled_draw_bitmap(&oled, 8, 26, DUCK_WIDTH, DUCK_HEIGHT, false, duck_bitmap);
 
   oled_write_text(&oled, stats_x, stats_y, false, "E");
   oled_draw_progress_bar(&oled, bar_x, stats_y + 1, bar_width, bar_height,
