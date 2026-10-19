@@ -12,7 +12,7 @@
 #include "response.h"
 #include "rotary_encoder.h"
 
-#define TOOLBAR_LENGTH 2
+#define TOOLBAR_LENGTH 4
 
 extern PassiveBuzzer buzzer;
 extern int wholenote;
@@ -22,8 +22,8 @@ extern MqttClient mqtt_client;
 Option toolbar_options[TOOLBAR_LENGTH] = {
     {.key = "Inbox", .value = 0},
     {.key = "Sleep", .value = 1},
-    // {.key = "Hydrate", .value = 2},
-    // {.key = "Feed", .value = 3},
+    {.key = "Hydrate", .value = 2},
+    {.key = "Inventory", .value = 3},
 };
 
 void select_toolbar(void *ctx, int32_t value) {
@@ -54,15 +54,17 @@ Menu toolbar = {.buzzer = &buzzer,
 
 void toolbar_display() {
   int y = oled.height - ICON_HEIGHT;
-  oled_draw_bitmap(&oled, 0, y, ICON_WIDTH, ICON_HEIGHT, toolbar.current == 0,
-                   icons_email_unread());
-  oled_draw_bitmap(&oled, ICON_WIDTH + 4, y, ICON_WIDTH, ICON_HEIGHT,
-                   toolbar.current == 1, icons_email_read());
-  // oled_write_text(&oled, (oled.font.width + 4) * 2,
-  //                 oled.height - oled.font.height, toolbar.current == 2, "H");
-  //
-  // oled_write_text(&oled, (oled.font.width + 4) * 3,
-  //                 oled.height - oled.font.height, toolbar.current == 3, "F");
+  int w = ICON_WIDTH;
+  int h = ICON_HEIGHT;
+  int dx = w + 4;
+  Icon icons[TOOLBAR_LENGTH] = {
+      icons_software_email_mailbox_unread_new_messages(),
+      icons_rpg_debuff_zz_sleep_status(),
+      icons_weather_water_droplet_liquid_rain_element_small(),
+      icons_tools_crafting_chest_locked_loot(),
+  };
+  for (int i = 0; i < TOOLBAR_LENGTH; i++)
+    oled_draw_bitmap(&oled, dx * i, y, w, h, toolbar.current == i, icons[i]);
 
   RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
   if (direction == ROTARY_COUNTERCLOCKWISE)
@@ -75,4 +77,4 @@ void toolbar_display() {
     rotary_encoder_wait_for_release(&rotary_encoder);
     menu_select(&toolbar);
   }
-}
+};

@@ -116,11 +116,11 @@ void message_display(Message m) {
   oled_update(&oled);
 };
 
-void select_message(void *context, int32_t index) {
-  if (index < 0 || index >= inbox_menu.length)
-    return;
-  int inbox_index = inbox_menu.options[index].value;
-  if (inbox_index < 0 || inbox_index >= INBOX_SIZE)
+  void select_message(void *context, int32_t index) {
+    if (index < 0 || index >= inbox_menu.length)
+      return;
+    int inbox_index = inbox_menu.options[index].value;
+    if (inbox_index < 0 || inbox_index >= INBOX_SIZE)
     return;
   inbox_read(inbox_index);
   showing_message = true;

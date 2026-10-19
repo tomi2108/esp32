@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "icons.h"
 #include "json.h"
 #include "mqttt.h"
 #include "oled.h"
@@ -44,13 +45,33 @@ static const uint8_t duck_bitmap[DUCK_HEIGHT * 2] = {
     0x7F, 0xF8, 0x3F, 0xF0, 0x1F, 0xE0, 0x0C, 0x60, 0x00, 0x00,
 };
 
-void state_display() {
-  const uint8_t line_height = oled.font.height + 2;
+void display_stats() {
   const uint8_t stats_x = 65;
-  const uint8_t bar_x = 78;
+  const uint8_t stats_y = 7;
+  const uint8_t dy = ICON_HEIGHT + 1;
+  const uint8_t bar_x = stats_x + ICON_WIDTH + 1;
   const uint8_t bar_width = 45;
-  const uint8_t bar_height = 6;
-  const uint8_t stats_y = 14;
+  const uint8_t bar_height = ICON_HEIGHT;
+
+  Icon icons[5] = {
+      icons_software_power_electricity_battery_thunder_lightning_bolt_zap(),
+      icons_food_meat_chicken_leg_drumstick(),
+      icons_weather_water_droplet_liquid_rain_element_small(),
+      icons_cosmetics_bath_shower_1(),
+      icons_emoji_face_happy(),
+  };
+  double stats[5] = {state.energy, state.hunger, state.hydration,
+                     state.cleanliness, state.happiness};
+
+  for (int i = 0; i < 5; i++) {
+    oled_draw_bitmap(&oled, stats_x, stats_y + dy * i, ICON_WIDTH, ICON_HEIGHT,
+                     false, icons[i]);
+    oled_draw_progress_bar(&oled, bar_x, stats_y + dy * i, bar_width,
+                           bar_height, stats[i]);
+  }
+}
+
+void state_display() {
 
   const char *name = state.name ? state.name : "Anonymus";
   if (strcmp(state.status, "sleeping") == 0 && !state.is_dead)
@@ -67,26 +88,7 @@ void state_display() {
   }
 
   oled_draw_bitmap(&oled, 8, 26, DUCK_WIDTH, DUCK_HEIGHT, false, duck_bitmap);
-
-  oled_write_text(&oled, stats_x, stats_y, false, "E");
-  oled_draw_progress_bar(&oled, bar_x, stats_y + 1, bar_width, bar_height,
-                         state.energy);
-
-  oled_write_text(&oled, stats_x, stats_y + line_height, false, "H");
-  oled_draw_progress_bar(&oled, bar_x, stats_y + line_height + 1, bar_width,
-                         bar_height, state.hunger);
-
-  oled_write_text(&oled, stats_x, stats_y + line_height * 2, false, "A");
-  oled_draw_progress_bar(&oled, bar_x, stats_y + line_height * 2 + 1, bar_width,
-                         bar_height, state.hydration);
-
-  oled_write_text(&oled, stats_x, stats_y + line_height * 3, false, "L");
-  oled_draw_progress_bar(&oled, bar_x, stats_y + line_height * 3 + 1, bar_width,
-                         bar_height, state.cleanliness);
-
-  oled_write_text(&oled, stats_x, stats_y + line_height * 4, false, "F");
-  oled_draw_progress_bar(&oled, bar_x, stats_y + line_height * 4 + 1, bar_width,
-                         bar_height, state.happiness);
+  display_stats();
 }
 
 void state_init() { mqtt_sub(mqtt_client, "/state", update_state); }
