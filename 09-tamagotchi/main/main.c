@@ -2,6 +2,7 @@
 #include "buzzer.h"
 #include "client.h"
 #include "display.h"
+#include "font.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/projdefs.h"
 #include "freertos/task.h"
@@ -36,7 +37,7 @@ void modules_init() {
 
 static void init() {
   oled_init(&oled, 128, 64, SDA_PIN, SCL_PIN, OLED_CONTROLLER_SH1106);
-  oled.font = font_eight_by_eight();
+  oled.font = font_default();
   buzzer = passive_buzzer_init(BUZZER_PIN);
   rotary_encoder_init(&rotary_encoder, A_PIN, B_PIN, BUTTON_PIN);
   buzzer_play_melody(buzzer, wholenote, sound_boot());

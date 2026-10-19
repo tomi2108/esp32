@@ -45,8 +45,9 @@ void oled_init(OLED *oled, uint8_t width, uint8_t height, gpio_num_t sda,
 void oled_write_text(OLED *oled, uint8_t x, uint8_t y, bool inverted,
                      const char *format, ...);
 
-void oled_write_char(OLED *oled, uint8_t x, uint8_t y, char character);
-void oled_write_char_inverted(OLED *oled, uint8_t x, uint8_t y, char character);
+void oled_write_char(OLED *oled, uint8_t x, uint8_t y, uint32_t codepoint);
+void oled_write_char_inverted(OLED *oled, uint8_t x, uint8_t y,
+                              uint32_t codepoint);
 
 void oled_set_pixel(OLED *oled, uint8_t x, uint8_t y, bool on);
 

@@ -86,31 +86,33 @@ void oled_set_pixel(OLED *oled, uint8_t x, uint8_t y, bool on) {
     oled->buffer[index] &= ~mask;
 }
 
-void oled_write_char_mode(OLED *oled, uint8_t x, uint8_t y, char character,
+void oled_write_char_mode(OLED *oled, uint8_t x, uint8_t y, uint32_t codepoint,
                           bool inverted) {
-  if (character < 0x20 || character > 0x7E)
+  const FontGlyph *glyph = font_get_glyph(oled->font, codepoint);
+
+  if (!glyph)
     return;
 
-  Font font = oled->font;
-  const uint8_t *glyph = font.data[character - 0x20];
+  for (uint8_t column = 0; column < glyph->width; column++) {
+    uint8_t bits = glyph->bitmap[column];
 
-  for (uint8_t column = 0; column < font.width; column++) {
-    uint8_t bits = glyph[column];
-    for (uint8_t row = 0; row < font.height; row++) {
-      bool on = bits & (1 << row);
+    for (uint8_t row = 0; row < oled->font.height; row++) {
+      bool on = (bits & (1U << row)) != 0;
+
       if (inverted)
         on = !on;
+
       oled_set_pixel(oled, x + column, y + row, on);
     }
   }
 }
 
-void oled_write_char(OLED *oled, uint8_t x, uint8_t y, char character) {
-  oled_write_char_mode(oled, x, y, character, false);
+void oled_write_char(OLED *oled, uint8_t x, uint8_t y, uint32_t codepoint) {
+  oled_write_char_mode(oled, x, y, codepoint, false);
 }
 void oled_write_char_inverted(OLED *oled, uint8_t x, uint8_t y,
-                              char character) {
-  oled_write_char_mode(oled, x, y, character, true);
+                              uint32_t codepoint) {
+  oled_write_char_mode(oled, x, y, codepoint, true);
 }
 
 void oled_write_text(OLED *oled, uint8_t x, uint8_t y, bool inverted,
@@ -124,28 +126,35 @@ void oled_write_text(OLED *oled, uint8_t x, uint8_t y, bool inverted,
 
   const char *text = buffer;
   Font font = oled->font;
+  uint8_t start_x = x;
 
   while (*text) {
     if (*text == '\n') {
-      x = 0;
-      y += font.height + 1;
+      x = start_x;
+      y += font.line_height;
       text++;
       continue;
     }
 
-    if (x + font.width > oled->width) {
-      x = 0;
-      y += font.height;
+    uint32_t codepoint = font_decode_next(&text);
+    const FontGlyph *glyph = font_get_glyph(font, codepoint);
+
+    if (!glyph)
+      continue;
+
+    if (x + glyph->width > oled->width) {
+      x = start_x;
+      y += font.line_height;
     }
 
     if (y + font.height > oled->height)
       break;
 
-    oled_write_char_mode(oled, x, y, *text, inverted);
-    x += font.width;
-    text++;
+    oled_write_char_mode(oled, x, y, codepoint, inverted);
+    x += glyph->advance;
   }
 }
+
 void oled_update(OLED *oled) {
   uint8_t data[17];
   size_t pages = (oled->height + 7) / 8;

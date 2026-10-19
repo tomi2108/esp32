@@ -1,22 +1,27 @@
+
 #ifndef FONT_H
 #define FONT_H
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/projdefs.h"
-#include "freertos/task.h"
-#include <sys/types.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
-#define MAX_CHARACTER_SIZE 10
-
-typedef const uint8_t FontData[96][MAX_CHARACTER_SIZE];
+typedef struct {
+  uint32_t codepoint;
+  const uint8_t *bitmap;
+  uint8_t width;
+  uint8_t advance;
+} FontGlyph;
 
 typedef struct Font {
-  const uint8_t (*data)[MAX_CHARACTER_SIZE];
+  const FontGlyph *glyphs;
   size_t count;
-  uint8_t width;
   uint8_t height;
+  uint8_t line_height;
 } Font;
 
-Font font_default();
-Font font_eight_by_eight();
+Font font_default(void);
+const FontGlyph *font_get_glyph(Font font, uint32_t codepoint);
+uint32_t font_decode_next(const char **text);
+
 #endif
