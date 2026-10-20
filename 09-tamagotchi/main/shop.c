@@ -1,5 +1,7 @@
 #include "shop.h"
 
+char *TAG = "SHOP";
+
 extern PassiveBuzzer buzzer;
 extern int wholenote;
 extern OLED oled;
@@ -41,21 +43,31 @@ void decode_item(const t_json_value *body, ShopItem *out) {
 
 void shop_get(void) {
   Response *shop_res = client_send_get(http_client, "/shop");
-  t_json_value *shop_body = json_parse_buffer(shop_res->body);
-
-  if (!shop_body)
+  if (!shop_res || !shop_res->body) {
+    ESP_LOGE(TAG, "Failed to fetch shop");
     return;
+  }
 
+  t_json_value *shop_body = json_parse_buffer(shop_res->body);
+  if (!shop_body) {
+    ESP_LOGE(TAG, "Failed to parse shop response");
+    return;
+  }
   const t_json_value *items = json_object_get(shop_body, "items");
+  if (!items) {
+    ESP_LOGE(TAG, "Shop response has no items");
+    return;
+  }
   int count = json_array_size(items);
 
   starts_at = json_value_string(json_object_get(shop_body, "startsAt"));
   ends_at = json_value_string(json_object_get(shop_body, "endsAt"));
 
   shop_size = 0;
-
   for (int i = 0; i < count && shop_size < MAX_SHOP_SIZE; i++) {
     const t_json_value *item = json_array_get(items, i);
+    if (!item)
+      continue;
     ShopItem decoded_item;
     decode_item(item, &decoded_item);
     if (decoded_item.stock <= 0)
@@ -91,11 +103,16 @@ void shop_refresh_async(void) {
 
 static void buy(int32_t item_id) {
   t_json *body = json_create();
+  if (body == NULL)
+    return;
+
   json_object_start(body);
   json_key(body, "itemId");
   json_int(body, item_id);
   json_object_end(body);
+
   client_send_post(http_client, json_buffer(body), "/shop");
+  json_destroy(body);
   shop_refresh_async();
   wallet_refresh_async();
 }

@@ -21,17 +21,28 @@ void buffer_destroy(t_buffer *buffer) {
 }
 
 int buffer_add(t_buffer *buffer, void *data, size_t size) {
-  if (buffer->stream == NULL) {
-    buffer->stream = malloc(size);
-    if (buffer->stream == NULL)
-      return -1;
-  } else {
-    buffer->stream = realloc(buffer->stream, buffer->size + size);
-    if (buffer->stream == NULL)
-      return -1;
-  }
-  memcpy(buffer->stream + buffer->size, data, size);
-  buffer->size += size;
+  if (!buffer || (!data && size > 0))
+    return -1;
+
+  if (size == 0)
+    return 0;
+
+  if (size > UINT32_MAX - buffer->size - 1)
+    return -1;
+
+  size_t new_size = (size_t)buffer->size + size;
+
+  void *stream = realloc(buffer->stream, new_size + 1);
+  if (!stream)
+    return -1;
+
+  buffer->stream = stream;
+
+  memcpy((uint8_t *)buffer->stream + buffer->size, data, size);
+
+  buffer->size = (uint32_t)new_size;
+  ((char *)buffer->stream)[buffer->size] = '\0';
+
   return 0;
 }
 

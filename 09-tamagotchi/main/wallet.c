@@ -13,11 +13,27 @@ extern bool hide_toolbar;
 int32_t wallet_coins = 0;
 void wallet_get(void) {
   Response *wallet_res = client_send_get(http_client, "/wallet");
-  t_json_value *wallet_body = json_parse_buffer(wallet_res->body);
-  if (!wallet_body)
-    return;
 
-  json_value_int(json_object_get(wallet_body, "coins"), &wallet_coins);
+  if (!wallet_res || !wallet_res->body) {
+    if (wallet_res)
+      response_destroy(wallet_res);
+    return;
+  }
+
+  if (wallet_res->status_code < 200 || wallet_res->status_code >= 300) {
+    response_destroy(wallet_res);
+    return;
+  }
+
+  t_json_value *wallet_body = json_parse_buffer(wallet_res->body);
+  if (wallet_body != NULL) {
+    const t_json_value *coins = json_object_get(wallet_body, "coins");
+    int32_t new_coins;
+    if (json_value_int(coins, &new_coins) == 0)
+      wallet_coins = new_coins;
+    json_value_destroy(wallet_body);
+  }
+  response_destroy(wallet_res);
 }
 
 static void wallet_refresh_task(void *arg) {

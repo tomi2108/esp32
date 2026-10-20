@@ -2,6 +2,7 @@
 #include "./env.h"
 #include "buzzer.h"
 #include "wallet.h"
+#include "esp_log.h"
 #include "client.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"

@@ -23,20 +23,31 @@ static esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
 }
 
 void request_destroy(Request *request) {
-  if (request == NULL)
+  if (!request)
     return;
+
+  if (request->headers)
+    headers_destroy(request->headers);
+
   if (request->body)
     body_destroy(request->body);
+
   free(request);
 }
 
-Request *request_create() {
-  Request *request = malloc(sizeof(Request));
-  if (request == NULL)
+Request *request_create(void) {
+  Request *request = calloc(1, sizeof(Request));
+  if (!request)
     return NULL;
 
   request->headers = headers_create();
   request->body = body_create();
+
+  if (!request->headers || !request->body) {
+    request_destroy(request);
+    return NULL;
+  }
+
   return request;
 }
 
@@ -97,16 +108,19 @@ Response *request_send(Request *req, const char *url) {
   }
 
   esp_err_t err = esp_http_client_perform(client);
-  if (err == ESP_OK) {
-    res->status_code = esp_http_client_get_status_code(client);
-  } else {
+
+  if (err != ESP_OK) {
+    ESP_LOGE("HTTP", "Request failed: %s", esp_err_to_name(err));
     response_destroy(res);
     esp_http_client_cleanup(client);
     request_destroy(req);
     return NULL;
   }
 
+  res->status_code = esp_http_client_get_status_code(client);
+
   esp_http_client_cleanup(client);
   request_destroy(req);
+
   return res;
 }

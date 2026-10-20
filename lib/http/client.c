@@ -1,150 +1,244 @@
+
 #include "client.h"
+
+#include "esp_heap_caps.h"
+#include "freertos/semphr.h"
+
+#define TAG "HTTP"
+#define HTTP_URL_MAX 256
 
 typedef struct {
   Response *response;
-} http_event_ctx_t;
+  size_t max_body_size;
+} HttpEventContext;
 
-static esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
-  http_event_ctx_t *ctx = (http_event_ctx_t *)evt->user_data;
-  switch (evt->event_id) {
-  case HTTP_EVENT_ON_CONNECTED:
-    break;
-  case HTTP_EVENT_HEADER_SENT:
-    break;
-  case HTTP_EVENT_ON_HEADER:
-    if (ctx && ctx->response && ctx->response->headers) {
-      headers_add(ctx->response->headers, evt->header_key, evt->header_value);
+static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
+  HttpEventContext *ctx = evt->user_data;
+
+  if (evt->event_id == HTTP_EVENT_ON_DATA) {
+    if (ctx == NULL || ctx->response == NULL || ctx->response->body == NULL ||
+        evt->data_len < 0 || (evt->data_len > 0 && evt->data == NULL)) {
+      return ESP_FAIL;
     }
-    break;
-  case HTTP_EVENT_ON_DATA:
-    if (ctx && ctx->response && ctx->response->body) {
-      buffer_add(ctx->response->body, evt->data, evt->data_len);
-    };
-    break;
-  case HTTP_EVENT_ON_FINISH:
-    break;
-  case HTTP_EVENT_DISCONNECTED:
-    break;
-  default:
-    break;
+
+    size_t length = (size_t)evt->data_len;
+    size_t current = ctx->response->body->size;
+
+    if (current > ctx->max_body_size || length > ctx->max_body_size - current) {
+      ESP_LOGE(TAG, "Response body exceeds %u bytes",
+               (unsigned)ctx->max_body_size);
+      return ESP_FAIL;
+    }
+
+    if (length > 0 && buffer_add(ctx->response->body, evt->data, length) != 0) {
+      ESP_LOGE(TAG, "Failed to allocate response body");
+      return ESP_FAIL;
+    }
   }
+
+  if (evt->event_id == HTTP_EVENT_ERROR) {
+    ESP_LOGE(TAG, "HTTP transport error");
+  }
+
   return ESP_OK;
 }
 
-HttpClient *client_create(char *baseUrl) {
-  HttpClient *client = malloc(sizeof(HttpClient));
-  if (!client)
+HttpClient *client_create(const char *baseUrl) {
+  if (baseUrl == NULL || baseUrl[0] == '\0')
+    return NULL;
+
+  HttpClient *client = calloc(1, sizeof(*client));
+  if (client == NULL)
     return NULL;
 
   client->baseUrl = baseUrl;
   client->headers = headers_create();
+  client->mutex = xSemaphoreCreateMutex();
 
-  char host[100] = {0};
-  if (sscanf(baseUrl, "http://%99[^:/]", host) == 1 ||
-      sscanf(baseUrl, "https://%99[^:/]", host) == 1) {
-    headers_add(client->headers, "Host", host);
+  if (client->headers == NULL || client->mutex == NULL) {
+    if (client->headers != NULL)
+      headers_destroy(client->headers);
+    if (client->mutex != NULL)
+      vSemaphoreDelete(client->mutex);
+    free(client);
+    return NULL;
   }
 
   headers_add(client->headers, "Connection", "close");
   headers_add(client->headers, "Accept-Encoding", "identity");
+
   return client;
 }
 
 void client_destroy(HttpClient *client) {
-  if (!client)
+  if (client == NULL)
     return;
-  if (client->headers)
+
+  if (client->headers != NULL)
     headers_destroy(client->headers);
+
+  if (client->mutex != NULL)
+    vSemaphoreDelete(client->mutex);
+
   free(client);
 }
 
-Response *client_send(HttpClient *client, Method method, char *url, Body body) {
-  char full_url[256] = {0};
+static esp_http_client_method_t get_method(const char *method) {
+  if (strcmp(method, "POST") == 0)
+    return HTTP_METHOD_POST;
+  if (strcmp(method, "PUT") == 0)
+    return HTTP_METHOD_PUT;
+  if (strcmp(method, "PATCH") == 0)
+    return HTTP_METHOD_PATCH;
+  if (strcmp(method, "DELETE") == 0)
+    return HTTP_METHOD_DELETE;
+  if (strcmp(method, "OPTIONS") == 0)
+    return HTTP_METHOD_OPTIONS;
+  if (strcmp(method, "HEAD") == 0)
+    return HTTP_METHOD_HEAD;
 
-  if (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0) {
-    snprintf(full_url, sizeof(full_url), "%s", url);
-  } else {
-    int need_slash =
-        (client->baseUrl[strlen(client->baseUrl) - 1] != '/' && url[0] != '/');
-    snprintf(full_url, sizeof(full_url), "%s%s%s", client->baseUrl,
-             need_slash ? "/" : "", url);
+  return HTTP_METHOD_GET;
+}
+
+Response *client_send(HttpClient *client, const char *method, const char *url,
+                      Body body) {
+  if (client == NULL || client->baseUrl == NULL || method == NULL ||
+      url == NULL || url[0] == '\0') {
+    return NULL;
   }
 
-  esp_http_client_method_t esp_method = HTTP_METHOD_GET;
-  if (strcmp(method, "POST") == 0)
-    esp_method = HTTP_METHOD_POST;
-  else if (strcmp(method, "PUT") == 0)
-    esp_method = HTTP_METHOD_PUT;
-  else if (strcmp(method, "PATCH") == 0)
-    esp_method = HTTP_METHOD_PATCH;
-  else if (strcmp(method, "DELETE") == 0)
-    esp_method = HTTP_METHOD_DELETE;
-  else if (strcmp(method, "OPTIONS") == 0)
-    esp_method = HTTP_METHOD_OPTIONS;
-  else if (strcmp(method, "HEAD") == 0)
-    esp_method = HTTP_METHOD_HEAD;
-
-  Response *res = response_create();
-  if (!res)
+  if (xSemaphoreTake(client->mutex, portMAX_DELAY) != pdTRUE)
     return NULL;
 
-  http_event_ctx_t ctx = {.response = res};
+  Response *res = NULL;
+  esp_http_client_handle_t handle = NULL;
+  char full_url[HTTP_URL_MAX];
+
+  int written;
+
+  if (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0) {
+    written = snprintf(full_url, sizeof(full_url), "%s", url);
+  } else {
+    size_t base_len = strlen(client->baseUrl);
+
+    bool need_slash = client->baseUrl[base_len - 1] != '/' && url[0] != '/';
+
+    written = snprintf(full_url, sizeof(full_url), "%s%s%s", client->baseUrl,
+                       need_slash ? "/" : "", url);
+  }
+
+  if (written < 0 || (size_t)written >= sizeof(full_url)) {
+    ESP_LOGE(TAG, "Request URL too long");
+    goto cleanup;
+  }
+
+  res = response_create();
+  if (res == NULL) {
+    ESP_LOGE(TAG, "Failed to allocate response");
+    goto cleanup;
+  }
+
+  HttpEventContext ctx = {
+      .response = res,
+      .max_body_size = 16384,
+  };
 
   esp_http_client_config_t config = {
       .url = full_url,
-      .method = esp_method,
-      .event_handler = _http_event_handler,
+      .method = get_method(method),
+      .event_handler = http_event_handler,
       .user_data = &ctx,
       .crt_bundle_attach = esp_crt_bundle_attach,
+      .timeout_ms = 15000,
   };
 
-  esp_http_client_handle_t client_handle = esp_http_client_init(&config);
-  if (client_handle == NULL) {
+  handle = esp_http_client_init(&config);
+  if (handle == NULL) {
+    ESP_LOGE(TAG, "Failed to initialize HTTP client");
+    goto cleanup;
+  }
+
+  for (size_t i = 0; i < list_size(client->headers); i++) {
+    Header *header = list_get(client->headers, i);
+
+    if (header != NULL && header->key != NULL && header->value != NULL) {
+      esp_err_t err =
+          esp_http_client_set_header(handle, header->key, header->value);
+
+      if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to set HTTP header: %s", header->key);
+        goto cleanup;
+      }
+    }
+  }
+
+  if (body != NULL && body->stream != NULL && body->size > 0) {
+    esp_err_t err = esp_http_client_set_post_field(
+        handle, (const char *)body->stream, (int)body->size);
+
+    if (err != ESP_OK) {
+      ESP_LOGE(TAG, "Failed to set HTTP request body");
+      goto cleanup;
+    }
+  }
+
+  ESP_LOGI(TAG, "%s %s; free heap=%lu, largest block=%lu", method, full_url,
+           (unsigned long)heap_caps_get_free_size(MALLOC_CAP_8BIT),
+           (unsigned long)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+
+  esp_err_t err = esp_http_client_perform(handle);
+
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "%s %s failed: %s (0x%x)", method, full_url,
+             esp_err_to_name(err), (unsigned int)err);
+    goto cleanup;
+  }
+
+  res->status_code = esp_http_client_get_status_code(handle);
+
+  ESP_LOGI(TAG, "%s %s -> %u, body=%u bytes", method, full_url,
+           (unsigned)res->status_code, (unsigned)res->body->size);
+
+  goto done;
+
+cleanup:
+  if (res != NULL) {
     response_destroy(res);
-    return NULL;
+    res = NULL;
   }
 
-  if (body && body->stream && body->size > 0) {
-    esp_http_client_set_post_field(client_handle, body->stream, body->size);
-  }
+done:
+  if (handle != NULL)
+    esp_http_client_cleanup(handle);
 
-  esp_err_t err = esp_http_client_perform(client_handle);
-  if (err == ESP_OK) {
-    res->status_code = esp_http_client_get_status_code(client_handle);
-  } else {
-    response_destroy(res);
-    esp_http_client_cleanup(client_handle);
-    return NULL;
-  }
-
-  esp_http_client_cleanup(client_handle);
+  xSemaphoreGive(client->mutex);
   return res;
 }
 
-Response *client_send_get(HttpClient *client, char *url) {
+Response *client_send_get(HttpClient *client, const char *url) {
   return client_send(client, "GET", url, NULL);
 }
 
-Response *client_send_post(HttpClient *client, Body body, char *url) {
+Response *client_send_post(HttpClient *client, Body body, const char *url) {
   return client_send(client, "POST", url, body);
 }
 
-Response *client_send_put(HttpClient *client, char *url) {
+Response *client_send_put(HttpClient *client, const char *url) {
   return client_send(client, "PUT", url, NULL);
 }
 
-Response *client_send_patch(HttpClient *client, char *url) {
+Response *client_send_patch(HttpClient *client, const char *url) {
   return client_send(client, "PATCH", url, NULL);
 }
 
-Response *client_send_delete(HttpClient *client, char *url) {
+Response *client_send_delete(HttpClient *client, const char *url) {
   return client_send(client, "DELETE", url, NULL);
 }
 
-Response *client_send_options(HttpClient *client, char *url) {
+Response *client_send_options(HttpClient *client, const char *url) {
   return client_send(client, "OPTIONS", url, NULL);
 }
 
-Response *client_send_head(HttpClient *client, char *url) {
+Response *client_send_head(HttpClient *client, const char *url) {
   return client_send(client, "HEAD", url, NULL);
 }

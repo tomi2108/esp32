@@ -9,7 +9,13 @@ extern int32_t wallet_coins;
 State state;
 
 void update_state(MqttClient client, MqttMessage message) {
-  const t_json_value *new_state = json_parse_buffer(message.buffer);
+  t_json_value *new_state = json_parse_buffer(message.buffer);
+
+  if (new_state == NULL) {
+    mqtt_destroy_message(message);
+    return;
+  }
+
   json_value_double(json_object_get(new_state, "energy"), &state.energy);
   json_value_double(json_object_get(new_state, "hunger"), &state.hunger);
   json_value_double(json_object_get(new_state, "hydration"), &state.hydration);
@@ -17,8 +23,17 @@ void update_state(MqttClient client, MqttMessage message) {
                     &state.cleanliness);
   json_value_double(json_object_get(new_state, "happiness"), &state.happiness);
   json_value_bool(json_object_get(new_state, "is_dead"), &state.is_dead);
-  state.status = json_value_string(json_object_get(new_state, "status"));
-  state.name = json_value_string(json_object_get(new_state, "name"));
+
+  const char *status = json_value_string(json_object_get(new_state, "status"));
+  const char *name = json_value_string(json_object_get(new_state, "name"));
+
+  snprintf(state.status, sizeof(state.status), "%s",
+           status != NULL ? status : "idle");
+  snprintf(state.name, sizeof(state.name), "%s",
+           name != NULL ? name : "Anonymous");
+
+  json_value_destroy(new_state);
+  mqtt_destroy_message(message);
 }
 
 static const uint8_t duck_bitmap[DUCK_HEIGHT * 2] = {
@@ -63,12 +78,11 @@ void display_stats(void) {
   }
 }
 
-void display_pet() {
-  const char *name = state.name ? state.name : "Anonymus";
+void display_pet(void) {
   if (strcmp(state.status, "sleeping") == 0 && !state.is_dead)
     oled_write_text(&oled, 8, 18, false, "zzzz");
 
-  oled_write_text(&oled, 0, 0, false, "%s", name);
+  oled_write_text(&oled, 0, 0, false, "%s", state.name);
 
   if (state.is_dead) {
     oled_draw_bitmap(&oled, (oled.width - DUCK_WIDTH) / 2,

@@ -2,9 +2,9 @@
 
 #include "./env.h"
 #include "buzzer.h"
-#include "icons.h"
 #include "client.h"
 #include "esp_log.h"
+#include "icons.h"
 #include "json.h"
 #include "menu.h"
 #include "mqttt.h"
@@ -12,11 +12,11 @@
 #include "response.h"
 #include "rotary_encoder.h"
 
-#define INBOX_SIZE 500
+#define INBOX_SIZE 100
 
 typedef struct Message {
-  const char *id;
-  const char *content;
+  char id[16];
+  char content[512];
   bool is_read;
 } Message;
 

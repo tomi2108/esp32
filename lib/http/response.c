@@ -75,13 +75,19 @@ char *status[1000] = {
     [599] = "Network Connect Timeout Error",
 };
 
-Response *response_create() {
-  Response *response = malloc(sizeof(Response));
-  if (response == NULL)
+Response *response_create(void) {
+  Response *response = calloc(1, sizeof(Response));
+  if (!response)
     return NULL;
 
   response->headers = headers_create();
   response->body = body_create();
+
+  if (!response->headers || !response->body) {
+    response_destroy(response);
+    return NULL;
+  }
+
   return response;
 }
 
