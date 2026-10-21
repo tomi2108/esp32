@@ -1,6 +1,6 @@
 #include "rotary_encoder.h"
 #define DEBOUNCE_MS 30
-#define DOUBLE_CLICK_MS 300
+#define DOUBLE_CLICK_MS 500
 
 int decode(uint8_t last, uint8_t current) {
   static const int8_t table[4][4] = {

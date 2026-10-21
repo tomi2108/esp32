@@ -16,3 +16,4 @@
 #define MAX_SHOP_SIZE 50
 
 void wallet_refresh_async(void);
+void wallet_display(int x, int y);
