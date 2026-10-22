@@ -4,7 +4,6 @@
 
 extern MqttClient mqtt_client;
 extern OLED oled;
-extern int32_t wallet_coins;
 
 State state;
 
@@ -48,7 +47,7 @@ void display_stats(void) {
   const uint8_t bar_width = 4;
   const uint8_t gap = 2;
   const uint8_t cell_width = w + bar_width + gap;
-  int stats_x = oled.width - cell_width * 5;
+  int stats_x = oled.width - cell_width * 5 - 5;
   int stats_y = oled.height - h;
 
   Icon icons[5] = {

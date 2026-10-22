@@ -36,6 +36,27 @@ typedef struct OLED {
   OLEDController controller;
 } OLED;
 
+typedef struct {
+  const uint8_t *bitmap;
+  const char *label;
+} OLEDMenuItemDecoration;
+
+typedef struct {
+  const char *title;
+  bool inverted;
+  bool separator;
+} OLEDMenuHeader;
+
+typedef struct {
+  Menu menu;
+  const OLEDMenuHeader *header;
+  const OLEDMenuItemDecoration *decorations;
+  uint8_t bitmap_width;
+  uint8_t bitmap_height;
+  uint8_t row_height;
+  uint8_t padding_x;
+} OLEDMenu;
+
 void oled_clear(OLED *oled);
 void oled_update(OLED *oled);
 
@@ -51,20 +72,12 @@ void oled_write_char_inverted(OLED *oled, uint8_t x, uint8_t y,
 
 void oled_set_pixel(OLED *oled, uint8_t x, uint8_t y, bool on);
 
-void oled_display_menu(OLED *oled, Menu menu);
+void oled_display_menu(OLED *oled, const OLEDMenu *menu);
 
 void oled_draw_spinner(OLED *oled, int cx, int cy, int radius);
 void oled_draw_bitmap(OLED *oled, uint8_t x, uint8_t y, uint8_t width,
                       uint8_t height, bool inverted, const uint8_t *bitmap);
-
 void oled_draw_dot(OLED *oled, int cx, int cy, int radius, bool on);
-void oled_display_menu_with_bitmaps(
-    OLED *oled,
-    Menu menu,
-    const uint8_t *const *bitmaps,
-    const char *const *right_labels,
-    uint8_t bitmap_width,
-    uint8_t bitmap_height);
 void oled_draw_progress_bar(OLED *oled, uint8_t x, uint8_t y, uint8_t width,
                             uint8_t height, double value, bool vertical);
 #endif

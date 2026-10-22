@@ -1,4 +1,3 @@
-
 #include "oled.h"
 
 #define MENU_ROW_HEIGHT 16
@@ -303,21 +302,178 @@ void oled_draw_progress_bar(OLED *oled, uint8_t x, uint8_t y, uint8_t width,
     }
   }
 }
-static void oled_display_menu_internal(OLED *oled, Menu menu,
-                                       const uint8_t *const *bitmaps,
-                                       const char *const *right_labels,
-                                       uint8_t bitmap_width,
-                                       uint8_t bitmap_height) {
+
+static uint8_t oled_draw_menu_header(OLED *oled, const OLEDMenuHeader *header) {
+  if (!header || !header->title || header->title[0] == '\0')
+    return 0;
+
+  uint8_t height = oled->font.line_height + 4;
+
+  if (height >= oled->height)
+    height = oled->height / 2;
+
+  if (header->inverted) {
+    for (uint8_t y = 0; y < height; y++) {
+      for (uint8_t x = 0; x < oled->width; x++)
+        oled_set_pixel(oled, x, y, true);
+    }
+  }
+
+  oled_write_text(oled, MENU_PADDING_X, 2, header->inverted, "%s",
+                  header->title);
+
+  if (header->separator) {
+    for (uint8_t x = 0; x < oled->width; x++)
+      oled_set_pixel(oled, x, height - 1, !header->inverted);
+  }
+
+  return height;
+}
+
+static uint16_t oled_text_width(OLED *oled, const char *text) {
+  uint16_t width = 0;
+
+  while (*text) {
+    const char *next = text;
+    uint32_t codepoint = font_decode_next(&next);
+    const FontGlyph *glyph = font_get_glyph(oled->font, codepoint);
+
+    if (!glyph)
+      break;
+
+    width += glyph->advance;
+    text = next;
+  }
+
+  return width;
+}
+
+static void oled_display_menu_item(OLED *oled, const OLEDMenu *config,
+                                   size_t index, uint8_t y,
+                                   uint8_t row_height) {
+  Menu menu = config->menu;
+  const char *key = menu.options[index].key;
+
+  if (!key)
+    return;
+
+  const OLEDMenuItemDecoration *decoration =
+      config->decorations ? &config->decorations[index] : NULL;
+
+  const uint8_t *bitmap = decoration ? decoration->bitmap : NULL;
+  const char *right_label =
+      decoration && decoration->label ? decoration->label : "";
+
+  uint8_t bitmap_width = config->bitmap_width;
+  uint8_t bitmap_height = config->bitmap_height;
+
+  bool has_bitmap = bitmap && bitmap_width > 0 && bitmap_height > 0 &&
+                    bitmap_height <= row_height;
+
+  uint16_t right_label_width = oled_text_width(oled, right_label);
+  uint16_t right_width = right_label_width;
+
+  if (has_bitmap)
+    right_width += bitmap_width + 2;
+
+  uint16_t text_x = config->padding_x;
+  uint16_t text_max_width = oled->width - text_x - 2;
+
+  if (right_width > 0) {
+    uint16_t right_start =
+        right_width + 2 < oled->width ? oled->width - right_width - 2 : 0;
+
+    text_max_width = right_start > text_x + 2 ? right_start - text_x - 2 : 0;
+  }
+
+  uint16_t text_width = 0;
+  const char *cursor = key;
+
+  while (*cursor) {
+    const char *next = cursor;
+    uint32_t codepoint = font_decode_next(&next);
+    const FontGlyph *glyph = font_get_glyph(oled->font, codepoint);
+
+    if (!glyph)
+      break;
+
+    if (text_width + glyph->advance > text_max_width)
+      break;
+
+    text_width += glyph->advance;
+    cursor = next;
+  }
+
+  size_t text_length = cursor - key;
+  char text[text_length + 1];
+
+  memcpy(text, key, text_length);
+  text[text_length] = '\0';
+
+  uint8_t text_y = y + (row_height - oled->font.height) / 2;
+
+  oled_write_text(oled, text_x, text_y, false, "%s", text);
+
+  uint16_t right_x = oled->width - right_width - 2;
+
+  if (has_bitmap) {
+    uint8_t bitmap_y = y + (row_height - bitmap_height) / 2;
+
+    oled_draw_bitmap(oled, right_x, bitmap_y, bitmap_width, bitmap_height,
+                     false, bitmap);
+    right_x += bitmap_width + 2;
+  }
+
+  if (right_label_width > 0)
+    oled_write_text(oled, right_x, text_y, false, "%s", right_label);
+
+  bool selected = index == menu.current;
+  uint16_t border_right =
+      right_width > 0 ? oled->width - 1 : text_x + text_width + 1;
+
+  if (border_right >= oled->width)
+    border_right = oled->width - 1;
+
+  for (uint8_t row = 0; row < row_height; row++) {
+    oled_set_pixel(oled, 0, y + row, selected);
+    oled_set_pixel(oled, border_right, y + row, selected);
+  }
+
+  for (uint16_t x = 0; x <= border_right; x++) {
+    oled_set_pixel(oled, x, y, selected);
+    oled_set_pixel(oled, x, y + row_height - 1, selected);
+  }
+}
+
+void oled_display_menu(OLED *oled, const OLEDMenu *config) {
+  if (!oled || !config)
+    return;
+
   oled_clear(oled);
 
   if (oled->font.line_height == 0)
     return;
 
-  uint8_t visible = oled->height / MENU_ROW_HEIGHT;
-  uint8_t scroll_offset = 0;
+  uint8_t row_height =
+      config->row_height ? config->row_height : MENU_ROW_HEIGHT;
+  uint8_t padding_x = config->padding_x ? config->padding_x : MENU_PADDING_X;
+
+  if (row_height < oled->font.height || row_height == 0)
+    return;
+
+  OLEDMenu normalized = *config;
+  normalized.row_height = row_height;
+  normalized.padding_x = padding_x;
+
+  uint8_t header_height = oled_draw_menu_header(oled, config->header);
+  uint8_t available_height = oled->height - header_height;
+  uint8_t visible = available_height / row_height;
 
   if (visible == 0)
     return;
+
+  Menu menu = config->menu;
+  size_t scroll_offset = 0;
 
   if (menu.length > visible) {
     if (menu.current >= visible / 2)
@@ -327,125 +483,17 @@ static void oled_display_menu_internal(OLED *oled, Menu menu,
       scroll_offset = menu.length - visible;
   }
 
-  for (uint8_t i = 0; i < visible; i++) {
+  for (size_t i = 0; i < visible; i++) {
     size_t index = scroll_offset + i;
 
     if (index >= menu.length)
       break;
 
-    const char *key = menu.options[index].key;
+    uint16_t y = header_height + i * row_height;
 
-    if (!key)
-      continue;
+    if (y + row_height > oled->height)
+      break;
 
-    uint8_t y = i * MENU_ROW_HEIGHT;
-    bool is_selected = index == menu.current;
-
-    bool has_bitmap = bitmaps && bitmaps[index] && bitmap_width > 0 &&
-                      bitmap_height > 0 && bitmap_height <= MENU_ROW_HEIGHT;
-
-    const char *right_label =
-        right_labels && right_labels[index] ? right_labels[index] : "";
-
-    uint16_t right_label_width = 0;
-    const char *cursor = right_label;
-
-    while (*cursor != '\0') {
-      const char *next = cursor;
-      uint32_t codepoint = font_decode_next(&next);
-      const FontGlyph *glyph = font_get_glyph(oled->font, codepoint);
-
-      if (!glyph)
-        break;
-
-      right_label_width += glyph->advance;
-      cursor = next;
-    }
-
-    uint16_t right_width = right_label_width;
-
-    if (has_bitmap)
-      right_width += bitmap_width + 2;
-
-    uint16_t text_x = MENU_PADDING_X;
-    uint16_t text_max_width = oled->width - MENU_PADDING_X - 2;
-
-    if (right_width > 0) {
-      uint16_t right_start = oled->width - right_width - 2;
-
-      if (right_start <= text_x)
-        text_max_width = 0;
-      else
-        text_max_width = right_start - text_x - 2;
-    }
-
-    uint16_t text_width = 0;
-    cursor = key;
-
-    while (*cursor != '\0') {
-      const char *next = cursor;
-      uint32_t codepoint = font_decode_next(&next);
-      const FontGlyph *glyph = font_get_glyph(oled->font, codepoint);
-
-      if (!glyph)
-        break;
-
-      if (text_width + glyph->advance > text_max_width)
-        break;
-
-      text_width += glyph->advance;
-      cursor = next;
-    }
-
-    char text[strlen(key) + 1];
-    size_t text_len = cursor - key;
-
-    memcpy(text, key, text_len);
-    text[text_len] = '\0';
-
-    uint8_t text_y = y + (MENU_ROW_HEIGHT - oled->font.height) / 2;
-
-    oled_write_text(oled, text_x, text_y, false, "%s", text);
-
-    uint16_t right_x = oled->width - right_width - 2;
-
-    if (has_bitmap) {
-      uint8_t bitmap_y = y + (MENU_ROW_HEIGHT - bitmap_height) / 2;
-      oled_draw_bitmap(oled, right_x, bitmap_y, bitmap_width, bitmap_height,
-                       false, bitmaps[index]);
-      right_x += bitmap_width + 2;
-    }
-
-    if (right_label_width > 0)
-      oled_write_text(oled, right_x, text_y, false, "%s", right_label);
-
-    uint16_t border_right =
-        right_width > 0 ? oled->width - 1 : text_x + text_width + 1;
-
-    if (border_right >= oled->width)
-      border_right = oled->width - 1;
-
-    for (uint8_t row = 0; row < MENU_ROW_HEIGHT; row++) {
-      oled_set_pixel(oled, 0, y + row, is_selected);
-      oled_set_pixel(oled, border_right, y + row, is_selected);
-    }
-
-    for (uint16_t x = 0; x <= border_right; x++) {
-      oled_set_pixel(oled, x, y, is_selected);
-      oled_set_pixel(oled, x, y + MENU_ROW_HEIGHT - 1, is_selected);
-    }
+    oled_display_menu_item(oled, &normalized, index, y, row_height);
   }
-}
-
-void oled_display_menu(OLED *oled, Menu menu) {
-  oled_display_menu_internal(oled, menu, NULL, NULL, 0, 0);
-}
-
-void oled_display_menu_with_bitmaps(OLED *oled, Menu menu,
-                                    const uint8_t *const *bitmaps,
-                                    const char *const *right_labels,
-                                    uint8_t bitmap_width,
-                                    uint8_t bitmap_height) {
-  oled_display_menu_internal(oled, menu, bitmaps, right_labels, bitmap_width,
-                             bitmap_height);
 }

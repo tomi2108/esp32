@@ -1,5 +1,6 @@
 #include "inbox.h"
 #include "icons.h"
+#include "oled.h"
 
 extern PassiveBuzzer buzzer;
 extern int wholenote;
@@ -8,7 +9,9 @@ extern RotaryEncoder rotary_encoder;
 extern MqttClient mqtt_client;
 extern HttpClient *http_client;
 
-Menu inbox_menu;
+static Menu inbox_menu;
+static const OLEDMenuHeader header = {
+    .inverted = true, .separator = true, .title = "Mensajes"};
 
 Message inbox[INBOX_SIZE] = {0};
 bool showing_message = false;
@@ -145,8 +148,14 @@ void select_message(void *context, int32_t index) {
 }
 
 void inbox_menu_display() {
+  int count = inbox_count();
+  if (count == 0)
+    inbox_menu.current = 0;
+  else if (inbox_menu.current >= count)
+    inbox_menu.current = count - 1;
+
   static Option o[INBOX_SIZE];
-  static Icon icons[INBOX_SIZE];
+  static OLEDMenuItemDecoration decorations[INBOX_SIZE];
 
   int j = 0;
 
@@ -159,7 +168,9 @@ void inbox_menu_display() {
         .value = i,
     };
 
-    icons[j] = inbox[i].is_read ? icons_software_email_message_read_opened()
+    decorations[j].label = NULL;
+    decorations[j].bitmap = inbox[i].is_read
+                                ? icons_software_email_message_read_opened()
                                 : icons_software_email_message_unread_closed();
     j++;
   }
@@ -168,8 +179,14 @@ void inbox_menu_display() {
   inbox_menu.length = j;
   inbox_menu.options = o;
 
-  oled_display_menu_with_bitmaps(&oled, inbox_menu, icons, NULL, ICON_HEIGHT,
-                                 ICON_WIDTH);
+  const OLEDMenu menu = {
+      .header = &header,
+      .bitmap_height = 16,
+      .bitmap_width = 16,
+      .decorations = decorations,
+      .menu = inbox_menu,
+  };
+  oled_display_menu(&oled, &menu);
   oled_update(&oled);
 }
 

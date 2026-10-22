@@ -9,7 +9,12 @@ extern bool hide_toolbar;
 static InventoryItem inventory[MAX_INVENTORY_SIZE];
 static int inventory_size;
 
+static char inventory_labels[MAX_INVENTORY_SIZE][INVENTORY_LABEL_SIZE];
+static char inventory_quantities[MAX_INVENTORY_SIZE][12];
+
 static Option inventory_options[MAX_INVENTORY_SIZE];
+static OLEDMenuItemDecoration inventory_decorations[MAX_INVENTORY_SIZE];
+
 static Menu inventory_menu = {
     .options = inventory_options,
     .length = 0,
@@ -19,7 +24,11 @@ static Menu inventory_menu = {
     .context = NULL,
 };
 
-static char inventory_labels[MAX_INVENTORY_SIZE][INVENTORY_LABEL_SIZE];
+static const OLEDMenuHeader inventory_header = {
+    .title = "Inventario",
+    .inverted = true,
+    .separator = true,
+};
 
 static void decode_inventory_item(const t_json_value *body,
                                   InventoryItem *out) {
@@ -32,21 +41,33 @@ static void decode_inventory_item(const t_json_value *body,
 
 static void inventory_update_options(void) {
   for (int i = 0; i < inventory_size; i++) {
-    snprintf(inventory_labels[i], sizeof(inventory_labels[i]), "%s x%" PRId32,
-             inventory[i].name, inventory[i].quantity);
+    snprintf(inventory_labels[i], sizeof(inventory_labels[i]), "%s",
+             inventory[i].name ? inventory[i].name : "Item");
+
+    snprintf(inventory_quantities[i], sizeof(inventory_quantities[i]),
+             "x%" PRId32, inventory[i].quantity);
+
     inventory_options[i] = (Option){
         .key = inventory_labels[i],
         .value = inventory[i].id,
     };
+
+    inventory_decorations[i] = (OLEDMenuItemDecoration){
+        .bitmap = NULL,
+        .label = inventory_quantities[i],
+    };
   }
+
   inventory_menu.options = inventory_options;
   inventory_menu.length = inventory_size;
+
   if (inventory_size == 0) {
     inventory_menu.current = 0;
     inventory_menu.selected = -1;
   } else {
     if (inventory_menu.current >= inventory_size)
       inventory_menu.current = inventory_size - 1;
+
     if (inventory_menu.current < 0)
       inventory_menu.current = 0;
   }
@@ -54,30 +75,38 @@ static void inventory_update_options(void) {
 
 bool inventory_fetch(void) {
   Response *res = client_send_get(http_client, "/inventory");
+
   if (res == NULL || res->body == NULL)
     return false;
 
   t_json_value *body = json_parse_buffer(res->body);
+
   if (body == NULL)
     return false;
 
   inventory_size = 0;
 
   int count = json_array_size(body);
+
   if (count > MAX_INVENTORY_SIZE)
     count = MAX_INVENTORY_SIZE;
 
   for (int i = 0; i < count; i++) {
     InventoryItem item = {0};
+
     decode_inventory_item(json_array_get(body, i), &item);
+
     if (item.quantity > 0)
       inventory[inventory_size++] = item;
   }
+
   inventory_update_options();
+
   return true;
 }
 
 static void inventory_refresh_task(void *arg) {
+  (void)arg;
   inventory_fetch();
   vTaskDelete(NULL);
 }
@@ -91,31 +120,38 @@ static int inventory_find(int32_t item_id) {
     if (inventory[i].id == item_id)
       return i;
   }
+
   return -1;
 }
 
 static void inventory_remove(int index) {
   for (int i = index; i < inventory_size - 1; i++)
     inventory[i] = inventory[i + 1];
+
   inventory_size--;
 }
 
 static void use(int32_t item_id) {
   // TODO: equip if equippable
   int index = inventory_find(item_id);
+
   if (index < 0 || inventory[index].quantity <= 0)
     return;
 
   inventory[index].quantity--;
+
   if (inventory[index].quantity == 0)
     inventory_remove(index);
+
   inventory_update_options();
+
   action_consume(item_id);
   inventory_refresh_async();
 }
 
 void inventory_display(void) {
   hide_toolbar = true;
+
   bool back = false;
 
   inventory_menu.current = 0;
@@ -138,22 +174,30 @@ void inventory_display(void) {
       continue;
     }
 
-    int size = inventory_size;
-    if (size > 0) {
-      if (direction == ROTARY_CLOCKWISE)
-        menu_next(&inventory_menu);
-      if (direction == ROTARY_COUNTERCLOCKWISE)
-        menu_prev(&inventory_menu);
-      if (click == ROTARY_CLICK_SINGLE && inventory_menu.current >= 0 &&
-          inventory_menu.current < inventory_size) {
-        use(inventory_menu.options[inventory_menu.current].value);
-      }
+    if (direction == ROTARY_CLOCKWISE)
+      menu_next(&inventory_menu);
+
+    if (direction == ROTARY_COUNTERCLOCKWISE)
+      menu_prev(&inventory_menu);
+
+    if (click == ROTARY_CLICK_SINGLE && inventory_menu.current >= 0 &&
+        inventory_menu.current < inventory_size) {
+      use(inventory_menu.options[inventory_menu.current].value);
     }
 
-    oled_clear(&oled);
-    oled_display_menu(&oled, inventory_menu);
+    OLEDMenu menu_config = {
+        .menu = inventory_menu,
+        .header = &inventory_header,
+        .decorations = inventory_decorations,
+        .bitmap_width = 0,
+        .bitmap_height = 0,
+    };
+
+    oled_display_menu(&oled, &menu_config);
     oled_update(&oled);
+
     vTaskDelay(pdMS_TO_TICKS(10));
   }
+
   hide_toolbar = false;
 }

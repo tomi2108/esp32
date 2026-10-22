@@ -1,4 +1,5 @@
 #include "esp_log.h"
+#include "icons.h"
 #include "oled.h"
 #include "shop.h"
 
