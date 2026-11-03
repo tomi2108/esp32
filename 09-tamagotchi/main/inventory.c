@@ -37,23 +37,25 @@ static void decode_inventory_item(const t_json_value *body,
   out->name = json_value_string(json_object_get(body, "name"));
   out->type = json_value_string(json_object_get(body, "type"));
   out->slot = json_value_string(json_object_get(body, "slot"));
+  out->code = json_value_string(json_object_get(body, "code"));
 }
 
 static void inventory_update_options(void) {
   for (int i = 0; i < inventory_size; i++) {
+    InventoryItem item = inventory[i];
     snprintf(inventory_labels[i], sizeof(inventory_labels[i]), "%s",
-             inventory[i].name ? inventory[i].name : "Item");
+             item.name ? item.name : "Item");
 
     snprintf(inventory_quantities[i], sizeof(inventory_quantities[i]),
-             "x%" PRId32, inventory[i].quantity);
+             "x%" PRId32, item.quantity);
 
     inventory_options[i] = (Option){
         .key = inventory_labels[i],
-        .value = inventory[i].id,
+        .value = item.id,
     };
 
     inventory_decorations[i] = (OLEDMenuItemDecoration){
-        .bitmap = NULL,
+        .bitmap = get_item_bitmap(item.code),
         .label = inventory_quantities[i],
     };
   }
@@ -132,20 +134,28 @@ static void inventory_remove(int index) {
 }
 
 static void use(int32_t item_id) {
-  // TODO: equip if equippable
   int index = inventory_find(item_id);
-
-  if (index < 0 || inventory[index].quantity <= 0)
+  if (index < 0)
     return;
 
-  inventory[index].quantity--;
+  InventoryItem item = inventory[index];
+  if (item.quantity <= 0)
+    return;
 
-  if (inventory[index].quantity == 0)
-    inventory_remove(index);
+  if (strcmp(item.type, "equippable") == 0) {
+    action_equip(item_id);
+    // TODO: affect state to show in pet ui
+    return;
+  }
+
+  if (strcmp(item.type, "consumable") == 0) {
+    action_consume(item_id);
+    item.quantity--;
+    if (item.quantity == 0)
+      inventory_remove(index);
+  }
 
   inventory_update_options();
-
-  action_consume(item_id);
   inventory_refresh_async();
 }
 
@@ -189,8 +199,8 @@ void inventory_display(void) {
         .menu = inventory_menu,
         .header = &inventory_header,
         .decorations = inventory_decorations,
-        .bitmap_width = 0,
-        .bitmap_height = 0,
+        .bitmap_width = ICON_WIDTH,
+        .bitmap_height = ICON_HEIGHT,
     };
 
     oled_display_menu(&oled, &menu_config);

@@ -44,3 +44,17 @@ void action_consume(int item_id) {
   json_object_end(body);
   action_send(body);
 }
+
+void action_equip(int item_id) {
+  t_json *body = json_create();
+  json_object_start(body);
+
+  json_key(body, "type");
+  json_string(body, "equip");
+
+  json_key(body, "itemId");
+  json_int(body, item_id);
+
+  json_object_end(body);
+  action_send(body);
+}

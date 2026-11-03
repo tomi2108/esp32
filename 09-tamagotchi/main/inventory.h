@@ -24,6 +24,7 @@
 typedef struct {
   int32_t id;
   const char *name;
+  const char *code;
   const char *type;
   const char *slot;
   int32_t quantity;
