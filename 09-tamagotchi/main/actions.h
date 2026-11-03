@@ -6,3 +6,4 @@
 void action_sleep();
 void action_hydrate();
 void action_consume(int item_id);
+void action_equip(int item_id);

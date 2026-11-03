@@ -3,6 +3,8 @@
 #include "./env.h"
 #include "actions.h"
 #include "buzzer.h"
+#include "icons.h"
+#include "assets.h"
 #include "client.h"
 #include "display.h"
 #include "freertos/FreeRTOS.h"
