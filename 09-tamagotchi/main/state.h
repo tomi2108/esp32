@@ -12,6 +12,15 @@
 #define DUCK_WIDTH 16
 #define DUCK_HEIGHT 16
 
+typedef struct Equipment {
+  // TODO: not correct, but not used yet.
+  //  fix when adding equipabble assests to
+  //  pet display
+  int32_t head;
+  int32_t body;
+  int32_t accessory;
+} Equipment;
+
 typedef struct State {
   char name[32];
   char status[16];
@@ -21,7 +30,9 @@ typedef struct State {
   double cleanliness;
   double happiness;
   bool is_dead;
+  Equipment equipment;
 } State;
 
 void state_display();
 void state_init();
+State state_get();

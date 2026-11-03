@@ -144,7 +144,7 @@ static void use(int32_t item_id) {
 
   if (strcmp(item.type, "equippable") == 0) {
     action_equip(item_id);
-    // TODO: affect state to show in pet ui
+    inventory_remove(index);
     return;
   }
 
