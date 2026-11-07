@@ -9,7 +9,6 @@ extern OLED oled;
 extern RotaryEncoder rotary_encoder;
 extern MqttClient mqtt_client;
 extern HttpClient *http_client;
-extern bool hide_toolbar;
 
 int32_t wallet_coins = 0;
 void wallet_get(void) {

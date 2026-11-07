@@ -1,6 +1,4 @@
 #include "state.h"
-#include "icons.h"
-#include "oled.h"
 
 extern MqttClient mqtt_client;
 extern OLED oled;
@@ -35,7 +33,7 @@ void update_state(MqttClient client, MqttMessage message) {
   mqtt_destroy_message(message);
 }
 
-State state_get() { return state; }
+State state_get(void) { return state; }
 
 static const uint8_t duck_bitmap[DUCK_HEIGHT * 2] = {
     0x07, 0xE0, 0x1F, 0xF8, 0x3F, 0xFC, 0x7F, 0xFE, 0x7F, 0xFE, 0xF9,
@@ -43,7 +41,7 @@ static const uint8_t duck_bitmap[DUCK_HEIGHT * 2] = {
     0x7F, 0xF8, 0x3F, 0xF0, 0x1F, 0xE0, 0x0C, 0x60, 0x00, 0x00,
 };
 
-void display_stats(void) {
+void state_stats_display(void) {
   const uint8_t w = ICON_WIDTH;
   const uint8_t h = ICON_HEIGHT;
   const uint8_t bar_width = 4;
@@ -73,7 +71,7 @@ void display_stats(void) {
   }
 }
 
-void display_pet(void) {
+void pet_display(void) {
   if (strcmp(state.status, "sleeping") == 0 && !state.is_dead)
     oled_write_text(&oled, 8, 18, false, "zzzz");
 
@@ -90,8 +88,4 @@ void display_pet(void) {
   oled_draw_bitmap(&oled, 8, 26, DUCK_WIDTH, DUCK_HEIGHT, false, duck_bitmap);
 }
 
-void state_display() {
-  display_pet();
-  display_stats();
-}
-void state_init() { mqtt_sub(mqtt_client, "/state", update_state); }
+void state_init(void) { mqtt_sub(mqtt_client, "/state", update_state); }

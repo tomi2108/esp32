@@ -5,6 +5,7 @@ idf_component_register(
     "display.c"
     "inbox.c"
     "inventory.c"
+    "main_menu.c"
     "shop.c"
     "spinner.c"
     "state.c"

@@ -33,6 +33,8 @@ typedef struct State {
   Equipment equipment;
 } State;
 
-void state_display();
-void state_init();
-State state_get();
+void pet_display(void);
+void state_stats_display(void);
+
+void state_init(void);
+State state_get(void);

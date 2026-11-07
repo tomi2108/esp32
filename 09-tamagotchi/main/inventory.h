@@ -2,13 +2,13 @@
 
 #include "./env.h"
 #include "actions.h"
-#include "buzzer.h"
-#include "icons.h"
 #include "assets.h"
+#include "buzzer.h"
 #include "client.h"
 #include "display.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "icons.h"
 #include "json.h"
 #include "menu.h"
 #include "oled.h"
@@ -33,4 +33,4 @@ typedef struct {
 } InventoryItem;
 
 void inventory_refresh_async(void);
-void inventory_display(void);
+void inventory_display(bool equipabble);

@@ -8,7 +8,6 @@ extern OLED oled;
 extern RotaryEncoder rotary_encoder;
 extern MqttClient mqtt_client;
 extern HttpClient *http_client;
-extern bool hide_toolbar;
 
 const char *starts_at;
 const char *ends_at;
@@ -148,7 +147,6 @@ static void buy(int32_t item_id) {
 void display_refresh_time(void) {}
 
 void shop_display(void) {
-  hide_toolbar = true;
   bool back = false;
 
   shop_menu.current = 0;
@@ -198,6 +196,4 @@ void shop_display(void) {
 
     vTaskDelay(pdMS_TO_TICKS(10));
   }
-
-  hide_toolbar = false;
 }

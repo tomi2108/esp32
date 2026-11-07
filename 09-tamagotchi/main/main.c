@@ -3,10 +3,11 @@
 #include "client.h"
 #include "display.h"
 #include "font.h"
+#include "inventory.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/projdefs.h"
 #include "freertos/task.h"
-#include "inventory.h"
+#include "inbox.h"
 #include "melody.h"
 #include "menu.h"
 #include "mqttt.h"
@@ -20,8 +21,6 @@
 #include "wifi.h"
 #include <stdint.h>
 
-bool hide_toolbar;
-extern State state;
 extern const uint8_t certificate[] asm("_binary_mosquitto_ca_crt_start");
 
 PassiveBuzzer buzzer;
@@ -64,9 +63,13 @@ void app_main(void) {
 
   while (1) {
     oled_clear(&oled);
-    state_display();
-    if (!state.is_dead && !hide_toolbar) {
-      toolbar_display();
+    State state = state_get();
+
+    pet_display();
+    wallet_display(60, 0);
+    toolbar_display();
+    if (!state.is_dead) {
+      state_stats_display();
     }
 
     oled_update(&oled);

@@ -11,7 +11,7 @@ extern HttpClient *http_client;
 
 static Menu inbox_menu;
 static const OLEDMenuHeader header = {
-    .inverted = true, .separator = true, .title = "Mensajes"};
+    .inverted = true, .separator = true, .title = "Mensajitos"};
 
 Message inbox[INBOX_SIZE] = {0};
 bool showing_message = false;

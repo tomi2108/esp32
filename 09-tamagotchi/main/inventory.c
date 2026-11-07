@@ -4,7 +4,6 @@ extern OLED oled;
 extern PassiveBuzzer buzzer;
 extern RotaryEncoder rotary_encoder;
 extern HttpClient *http_client;
-extern bool hide_toolbar;
 
 static InventoryItem inventory[MAX_INVENTORY_SIZE];
 static int inventory_size;
@@ -22,12 +21,6 @@ static Menu inventory_menu = {
     .selected = -1,
     .buzzer = &buzzer,
     .context = NULL,
-};
-
-static const OLEDMenuHeader inventory_header = {
-    .title = "Inventario",
-    .inverted = true,
-    .separator = true,
 };
 
 static void decode_inventory_item(const t_json_value *body,
@@ -159,8 +152,13 @@ static void use(int32_t item_id) {
   inventory_refresh_async();
 }
 
-void inventory_display(void) {
-  hide_toolbar = true;
+void inventory_display(bool equippable) {
+  // TODO: filter equipabble from options
+  const OLEDMenuHeader inventory_header = {
+      .title = equippable ? "Comida" : "Ropa",
+      .inverted = true,
+      .separator = true,
+  };
 
   bool back = false;
 
@@ -208,6 +206,4 @@ void inventory_display(void) {
 
     vTaskDelay(pdMS_TO_TICKS(10));
   }
-
-  hide_toolbar = false;
 }
