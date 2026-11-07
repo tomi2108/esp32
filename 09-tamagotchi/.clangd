@@ -2,6 +2,7 @@ CompileFlags:
   CompilationDatabase: build
 
   Remove:
+    - -mtune=esp-base
     - -mlongcalls
     - -fno-malloc-dce
     - -fno-shrink-wrap
