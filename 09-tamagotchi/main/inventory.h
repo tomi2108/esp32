@@ -1,6 +1,5 @@
 #pragma once
 
-#include "./env.h"
 #include "actions.h"
 #include "assets.h"
 #include "buzzer.h"
@@ -20,7 +19,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define MAX_INVENTORY_SIZE 150
+#define MAX_INVENTORY_SIZE 75
 #define INVENTORY_LABEL_SIZE 64
 
 typedef struct {
@@ -33,4 +32,4 @@ typedef struct {
 } InventoryItem;
 
 void inventory_refresh_async(void);
-void inventory_display(bool equipabble);
+void inventory_display(bool equippable);

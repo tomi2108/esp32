@@ -1,12 +1,20 @@
+
 #include "inventory.h"
+
+#include <string.h>
 
 extern OLED oled;
 extern PassiveBuzzer buzzer;
 extern RotaryEncoder rotary_encoder;
 extern HttpClient *http_client;
 
-static InventoryItem inventory[MAX_INVENTORY_SIZE];
-static int inventory_size;
+typedef enum { INVENTORY_EQUIPPABLE, INVENTORY_CONSUMABLE } InventoryCategory;
+
+static InventoryItem equippables[MAX_INVENTORY_SIZE];
+static int equippables_size = 0;
+
+static InventoryItem consumables[MAX_INVENTORY_SIZE];
+static int consumables_size = 0;
 
 static char inventory_labels[MAX_INVENTORY_SIZE][INVENTORY_LABEL_SIZE];
 static char inventory_quantities[MAX_INVENTORY_SIZE][12];
@@ -23,6 +31,15 @@ static Menu inventory_menu = {
     .context = NULL,
 };
 
+static InventoryItem *inventory_get_items(InventoryCategory category) {
+  return category == INVENTORY_EQUIPPABLE ? equippables : consumables;
+}
+
+static int *inventory_get_size(InventoryCategory category) {
+  return category == INVENTORY_EQUIPPABLE ? &equippables_size
+                                          : &consumables_size;
+}
+
 static void decode_inventory_item(const t_json_value *body,
                                   InventoryItem *out) {
   json_value_int(json_object_get(body, "id"), &out->id);
@@ -33,42 +50,46 @@ static void decode_inventory_item(const t_json_value *body,
   out->code = json_value_string(json_object_get(body, "code"));
 }
 
-static void inventory_update_options(void) {
-  for (int i = 0; i < inventory_size; i++) {
-    InventoryItem item = inventory[i];
+static void inventory_update_options(InventoryItem items[], int size) {
+  if (size > MAX_INVENTORY_SIZE)
+    size = MAX_INVENTORY_SIZE;
+
+  for (int i = 0; i < size; i++) {
+    InventoryItem *item = &items[i];
+
     snprintf(inventory_labels[i], sizeof(inventory_labels[i]), "%s",
-             item.name ? item.name : "Item");
+             item->name ? item->name : "Item");
 
     snprintf(inventory_quantities[i], sizeof(inventory_quantities[i]),
-             "x%" PRId32, item.quantity);
+             "x%" PRId32, item->quantity);
 
     inventory_options[i] = (Option){
         .key = inventory_labels[i],
-        .value = item.id,
+        .value = item->id,
     };
 
     inventory_decorations[i] = (OLEDMenuItemDecoration){
-        .bitmap = get_item_bitmap(item.code),
+        .bitmap = get_item_bitmap(item->code),
         .label = inventory_quantities[i],
     };
   }
 
   inventory_menu.options = inventory_options;
-  inventory_menu.length = inventory_size;
+  inventory_menu.length = size;
 
-  if (inventory_size == 0) {
+  if (size == 0) {
     inventory_menu.current = 0;
     inventory_menu.selected = -1;
   } else {
-    if (inventory_menu.current >= inventory_size)
-      inventory_menu.current = inventory_size - 1;
+    if (inventory_menu.current >= size)
+      inventory_menu.current = size - 1;
 
     if (inventory_menu.current < 0)
       inventory_menu.current = 0;
   }
 }
 
-bool inventory_fetch(void) {
+static bool inventory_fetch(void) {
   Response *res = client_send_get(http_client, "/inventory");
 
   if (res == NULL || res->body == NULL)
@@ -79,23 +100,27 @@ bool inventory_fetch(void) {
   if (body == NULL)
     return false;
 
-  inventory_size = 0;
+  equippables_size = 0;
+  consumables_size = 0;
 
   int count = json_array_size(body);
-
-  if (count > MAX_INVENTORY_SIZE)
-    count = MAX_INVENTORY_SIZE;
 
   for (int i = 0; i < count; i++) {
     InventoryItem item = {0};
 
     decode_inventory_item(json_array_get(body, i), &item);
 
-    if (item.quantity > 0)
-      inventory[inventory_size++] = item;
-  }
+    if (item.quantity <= 0 || item.type == NULL)
+      continue;
 
-  inventory_update_options();
+    if (strcmp(item.type, "equippable") == 0) {
+      if (equippables_size < MAX_INVENTORY_SIZE)
+        equippables[equippables_size++] = item;
+    } else if (strcmp(item.type, "consumable") == 0) {
+      if (consumables_size < MAX_INVENTORY_SIZE)
+        consumables[consumables_size++] = item;
+    }
+  }
 
   return true;
 }
@@ -110,52 +135,66 @@ void inventory_refresh_async(void) {
   xTaskCreate(inventory_refresh_task, "inventory_refresh", 8192, NULL, 0, NULL);
 }
 
-static int inventory_find(int32_t item_id) {
-  for (int i = 0; i < inventory_size; i++) {
-    if (inventory[i].id == item_id)
+static int inventory_find(InventoryItem items[], int size, int32_t item_id) {
+  for (int i = 0; i < size; i++) {
+    if (items[i].id == item_id)
       return i;
   }
 
   return -1;
 }
 
-static void inventory_remove(int index) {
-  for (int i = index; i < inventory_size - 1; i++)
-    inventory[i] = inventory[i + 1];
+static void inventory_remove(InventoryItem items[], int *size, int index) {
+  if (index < 0 || index >= *size)
+    return;
 
-  inventory_size--;
+  for (int i = index; i < *size - 1; i++)
+    items[i] = items[i + 1];
+  (*size)--;
 }
 
-static void use(int32_t item_id) {
-  int index = inventory_find(item_id);
+static void inventory_use(InventoryCategory category, int32_t item_id) {
+  InventoryItem *items = inventory_get_items(category);
+  int *size = inventory_get_size(category);
+
+  int index = inventory_find(items, *size, item_id);
+
   if (index < 0)
     return;
 
-  InventoryItem item = inventory[index];
-  if (item.quantity <= 0)
+  InventoryItem *item = &items[index];
+
+  if (item->quantity <= 0)
     return;
 
-  if (strcmp(item.type, "equippable") == 0) {
+  if (category == INVENTORY_EQUIPPABLE) {
     action_equip(item_id);
-    inventory_remove(index);
-    return;
-  }
 
-  if (strcmp(item.type, "consumable") == 0) {
+    inventory_remove(items, size, index);
+  } else {
     action_consume(item_id);
-    item.quantity--;
-    if (item.quantity == 0)
-      inventory_remove(index);
+
+    item->quantity--;
+
+    if (item->quantity <= 0) {
+      inventory_remove(items, size, index);
+    }
   }
 
-  inventory_update_options();
+  inventory_update_options(items, *size);
+
   inventory_refresh_async();
 }
 
-void inventory_display(bool equippable) {
-  // TODO: filter equipabble from options
+void inventory_display(bool equipabble) {
+  InventoryCategory category =
+      equipabble ? INVENTORY_EQUIPPABLE : INVENTORY_CONSUMABLE;
+
+  InventoryItem *items = inventory_get_items(category);
+  int *size = inventory_get_size(category);
+
   const OLEDMenuHeader inventory_header = {
-      .title = equippable ? "Comida" : "Ropa",
+      .title = equipabble ? "Ropita" : "Comida",
       .inverted = true,
       .separator = true,
   };
@@ -166,7 +205,10 @@ void inventory_display(bool equippable) {
   inventory_menu.selected = -1;
 
   while (!back) {
+    inventory_update_options(items, *size);
+
     RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
+
     RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
 
     if (click == ROTARY_CLICK_DOUBLE) {
@@ -174,7 +216,7 @@ void inventory_display(bool equippable) {
       continue;
     }
 
-    if (inventory_size == 0) {
+    if (*size == 0) {
       oled_clear(&oled);
       oled_write_text(&oled, 0, oled.height / 2 - 3, false, "Inventory empty");
       oled_update(&oled);
@@ -189,8 +231,9 @@ void inventory_display(bool equippable) {
       menu_prev(&inventory_menu);
 
     if (click == ROTARY_CLICK_SINGLE && inventory_menu.current >= 0 &&
-        inventory_menu.current < inventory_size) {
-      use(inventory_menu.options[inventory_menu.current].value);
+        inventory_menu.current < *size) {
+      int32_t item_id = inventory_menu.options[inventory_menu.current].value;
+      inventory_use(category, item_id);
     }
 
     OLEDMenu menu_config = {

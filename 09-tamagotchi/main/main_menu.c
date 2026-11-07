@@ -15,10 +15,10 @@ Option main_menu_options[MAIN_MENU_LENGTH] = {
 void select_main_menu(void *ctx, int32_t value) {
   switch (value) {
   case 0:
-    inventory_display(true);
+    inventory_display(false);
     break;
   case 1:
-    inventory_display(false);
+    inventory_display(true);
     break;
   case 2:
     inbox_display();

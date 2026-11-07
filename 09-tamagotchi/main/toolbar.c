@@ -45,7 +45,7 @@ void toolbar_display() {
   Icon icons[TOOLBAR_LENGTH] = {
       icons_rpg_debuff_zz_sleep_status(),
       icons_weather_water_droplet_liquid_rain_element_small(),
-      icons_controller_buttons_menu_options_settings()};
+      icons_software_file_folder_directory_explorer()};
 
   for (int i = 0; i < TOOLBAR_LENGTH; i++) {
     uint8_t x = tb_x + i * dx;
