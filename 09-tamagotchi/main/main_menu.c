@@ -94,6 +94,7 @@ void open_main_menu(void) {
       rotary_encoder_wait_for_release(&rotary_encoder);
       menu_select(&main_menu);
     }
+
     oled_update(&oled);
     vTaskDelay(pdMS_TO_TICKS(10));
   }
