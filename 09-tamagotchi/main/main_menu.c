@@ -5,12 +5,11 @@ extern int wholenote;
 extern OLED oled;
 extern RotaryEncoder rotary_encoder;
 
-Option main_menu_options[MAIN_MENU_LENGTH] = {
-    {.key = "Comida", .value = 0},
-    {.key = "Ropita", .value = 1},
-    {.key = "Mensajitos", .value = 2},
-    {.key = "Tienda", .value = 3},
-};
+Option main_menu_options[MAIN_MENU_LENGTH] = {{.key = "Comida", .value = 0},
+                                              {.key = "Ropita", .value = 1},
+                                              {.key = "Mensajitos", .value = 2},
+                                              {.key = "Tienda", .value = 3},
+                                              {.key = "Juegos", .value = 4}};
 
 void select_main_menu(void *ctx, int32_t value) {
   switch (value) {
@@ -25,6 +24,9 @@ void select_main_menu(void *ctx, int32_t value) {
     break;
   case 3:
     shop_display();
+    break;
+  case 4:
+    open_games_menu();
     break;
   default:
     break;
@@ -51,8 +53,7 @@ void display_main_menu() {
       icons_food_restaurant_eating_utensils_fork_knife(),
       icons_hats_sunglasses(),
       icons_software_email_mailbox_unread_new_messages(),
-      icons_software_shopping_cart(),
-  };
+      icons_software_shopping_cart(), icons_controller_gamepad()};
 
   oled_write_text(&oled, 0, 0, false, "%s",
                   main_menu_options[main_menu.current].key);

@@ -497,3 +497,50 @@ void oled_display_menu(OLED *oled, const OLEDMenu *config) {
     oled_display_menu_item(oled, &normalized, index, y, row_height);
   }
 }
+
+void oled_draw_line(OLED *oled, int x0, int y0, int x1, int y1, bool on) {
+  int dx = abs(x1 - x0);
+  int dy = abs(y1 - y0);
+
+  int sx = x0 < x1 ? 1 : -1;
+  int sy = y0 < y1 ? 1 : -1;
+
+  int error = dx - dy;
+
+  while (true) {
+    oled_set_pixel(oled, x0, y0, on);
+
+    if (x0 == x1 && y0 == y1)
+      break;
+
+    int error2 = 2 * error;
+
+    if (error2 > -dy) {
+      error -= dy;
+      x0 += sx;
+    }
+
+    if (error2 < dx) {
+      error += dx;
+      y0 += sy;
+    }
+  }
+}
+
+void oled_draw_circle(OLED *oled, int cx, int cy, int inner_radius,
+                      int outer_radius, bool on) {
+  if (!oled || inner_radius < 0 || outer_radius < inner_radius)
+    return;
+
+  int inner_sq = inner_radius * inner_radius;
+  int outer_sq = outer_radius * outer_radius;
+
+  for (int dy = -outer_radius; dy <= outer_radius; dy++) {
+    for (int dx = -outer_radius; dx <= outer_radius; dx++) {
+      int distance_sq = dx * dx + dy * dy;
+
+      if (distance_sq >= inner_sq && distance_sq <= outer_sq)
+        oled_set_pixel(oled, cx + dx, cy + dy, on);
+    }
+  }
+}

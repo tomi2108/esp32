@@ -2,6 +2,7 @@
 
 #include "actions.h"
 #include "buzzer.h"
+#include "games.h"
 #include "icons.h"
 #include "inbox.h"
 #include "inventory.h"
@@ -10,5 +11,5 @@
 #include "rotary_encoder.h"
 #include "shop.h"
 
-#define MAIN_MENU_LENGTH 4
+#define MAIN_MENU_LENGTH 5
 void open_main_menu(void);

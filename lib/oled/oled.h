@@ -80,4 +80,9 @@ void oled_draw_bitmap(OLED *oled, uint8_t x, uint8_t y, uint8_t width,
 void oled_draw_dot(OLED *oled, int cx, int cy, int radius, bool on);
 void oled_draw_progress_bar(OLED *oled, uint8_t x, uint8_t y, uint8_t width,
                             uint8_t height, double value, bool vertical);
+
+void oled_draw_line(OLED *oled, int x0, int y0, int x1, int y1, bool on);
+
+void oled_draw_circle(OLED *oled, int cx, int cy, int inner_radius,
+                      int outer_radius, bool on);
 #endif
