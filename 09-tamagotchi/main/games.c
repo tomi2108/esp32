@@ -1,4 +1,5 @@
 #include "games.h"
+#include "icons.h"
 #include "tictactoe.h"
 
 extern PassiveBuzzer buzzer;
@@ -6,12 +7,18 @@ extern int wholenote;
 extern OLED oled;
 extern RotaryEncoder rotary_encoder;
 
-Option games_options[GAMES_MENU_LENGTH] = {{.key = "Ta te ti", .value = 0}};
+Option games_options[GAMES_MENU_LENGTH] = {
+    {.key = "Ta te ti", .value = 0},
+    {.key = "Snake", .value = 1},
+};
 
 void select_game(void *ctx, int32_t value) {
   switch (value) {
   case 0:
     tictactoe_play();
+    break;
+  case 1:
+    snake_play();
     break;
   default:
     break;
@@ -36,6 +43,7 @@ void display_games() {
 
   Icon icons[GAMES_MENU_LENGTH] = {
       icons_software_signs_maths_multiplication_x_crossout_checkmark_cancel(),
+      icons_misc_snake_viper_cobra_poison_1(),
   };
 
   oled_write_text(&oled, 0, 0, false, "%s",

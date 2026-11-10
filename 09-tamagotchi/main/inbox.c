@@ -220,7 +220,7 @@ void inbox_fetch(void) {
 
 void inbox_init() {
   char topic[32];
-  snprintf(topic, sizeof(topic), "/message/%d", RECIPIENT_ID);
+  snprintf(topic, sizeof(topic), "/message/%d", PLAYER_ID);
   mqtt_sub(mqtt_client, topic, message_recieved);
   inbox_menu.buzzer = &buzzer;
   inbox_menu.on_select = select_message;

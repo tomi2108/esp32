@@ -18,7 +18,7 @@ void api_buy_item(int32_t item_id) {
   json_destroy(body);
 }
 
-Response *api_publish_score(int32_t game_code, int32_t score) {
+Response *api_publish_score(char *game_code, int32_t score) {
   t_json *body = json_create();
   if (!body)
     return NULL;
@@ -26,7 +26,7 @@ Response *api_publish_score(int32_t game_code, int32_t score) {
   json_object_start(body);
 
   json_key(body, "gameCode");
-  json_int(body, game_code);
+  json_string(body, game_code);
 
   json_key(body, "score");
   json_int(body, score);

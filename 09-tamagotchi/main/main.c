@@ -3,11 +3,11 @@
 #include "client.h"
 #include "display.h"
 #include "font.h"
-#include "inventory.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/projdefs.h"
 #include "freertos/task.h"
 #include "inbox.h"
+#include "inventory.h"
 #include "melody.h"
 #include "menu.h"
 #include "mqttt.h"
@@ -43,7 +43,7 @@ static void init() {
   rotary_encoder_init(&rotary_encoder, A_PIN, B_PIN, BUTTON_PIN);
   buzzer_play_melody(buzzer, wholenote, sound_boot());
 
-  spinner_start(&oled);
+  spinner_start(&oled, 64, 32);
   wifi_init(WIFI_SSID, WIFI_PASSWORD);
 
   mqtt_client = mqtt_get_client(MQTT_URL, MQTT_USERNAME, MQTT_PASSWORD,
