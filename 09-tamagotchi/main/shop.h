@@ -1,9 +1,9 @@
 #pragma once
 #include "./env.h"
+#include "api.h"
 #include "buzzer.h"
-#include "wallet.h"
-#include "esp_log.h"
 #include "client.h"
+#include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "icons.h"
@@ -13,6 +13,7 @@
 #include "oled.h"
 #include "response.h"
 #include "rotary_encoder.h"
+#include "wallet.h"
 #include <inttypes.h>
 
 #define MAX_SHOP_SIZE 50

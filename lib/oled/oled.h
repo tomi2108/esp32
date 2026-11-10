@@ -9,6 +9,7 @@
 #include "freertos/task.h"
 #include "i2c.h"
 #include "menu.h"
+#include "modal.h"
 #include "rom/ets_sys.h"
 #include <math.h>
 #include <stdarg.h>
@@ -85,4 +86,12 @@ void oled_draw_line(OLED *oled, int x0, int y0, int x1, int y1, bool on);
 
 void oled_draw_circle(OLED *oled, int cx, int cy, int inner_radius,
                       int outer_radius, bool on);
+
+void oled_draw_rectangle(OLED *oled, int x, int y, int width, int height,
+                         bool on);
+void oled_fill_rectangle(OLED *oled, int x, int y, int width, int height,
+                         bool on);
+void oled_draw_square(OLED *oled, int x, int y, int size, bool on);
+void oled_fill_square(OLED *oled, int x, int y, int size, bool on);
+void oled_draw_modal(OLED *oled, Modal *modal);
 #endif

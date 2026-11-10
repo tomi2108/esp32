@@ -127,19 +127,8 @@ void shop_refresh_async(void) {
 }
 
 static void buy(int32_t item_id) {
-  t_json *body = json_create();
-
-  if (!body)
-    return;
-
-  json_object_start(body);
-  json_key(body, "itemId");
-  json_int(body, item_id);
-  json_object_end(body);
-
-  client_send_post(http_client, json_buffer(body), "/shop");
-  json_destroy(body);
-
+  api_buy_item(item_id);
+  // TODO: optimistically remove
   shop_refresh_async();
   wallet_refresh_async();
 }

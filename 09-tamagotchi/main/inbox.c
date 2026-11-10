@@ -54,17 +54,7 @@ void inbox_add(Message m) {
 
 static void mark_as_read_task(void *arg) {
   char *path = arg;
-  Response *res = client_send_patch(http_client, path);
-
-  if (res == NULL) {
-    ESP_LOGE("inbox", "Failed to mark message as read: request failed");
-  } else {
-    if (res->status_code < 200 || res->status_code >= 300)
-      ESP_LOGE("inbox", "Failed to mark message as read: HTTP %d",
-               res->status_code);
-    response_destroy(res);
-  }
-
+  client_send_patch(http_client, path);
   free(path);
   vTaskDelete(NULL);
 }
@@ -192,7 +182,7 @@ void inbox_menu_display() {
 
 void inbox_fetch(void) {
   char path[32];
-  snprintf(path, sizeof(path), "/inbox/%d", RECIPIENT_ID);
+  snprintf(path, sizeof(path), "/inbox/%d", PLAYER_ID);
 
   Response *res = client_send_get(http_client, path);
   if (res == NULL)

@@ -5,3 +5,4 @@ x 2026-11-07 2026-11-03 Separar inventario de comida y guardarropas
 2026-11-07 Menu misiones
 2026-11-07 Mostrar equipados en guardarropa
 2026-11-07 Juegos
+2026-11-10 Borrar items del shop cuando se compran de manera optimistica
