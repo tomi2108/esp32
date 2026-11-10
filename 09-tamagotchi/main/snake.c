@@ -1,8 +1,11 @@
 #include "snake.h"
 
 #define CELL_SIZE 4
-#define ROWS 64 / CELL_SIZE
-#define COLS 128 / CELL_SIZE
+#define ROWS (64 / CELL_SIZE)
+#define COLS (128 / CELL_SIZE)
+#define MOVE_INTERVAL_MS 200
+#define INPUT_INTERVAL_MS 10
+#define MAX_SNAKE_LENGTH (ROWS * COLS)
 
 extern PassiveBuzzer buzzer;
 extern int wholenote;
@@ -13,7 +16,9 @@ typedef struct {
   int row;
   int col;
 } Cell;
+
 typedef enum Snake_CellValue { NONE, APPLE, SNAKE } Snake_CellValue;
+
 typedef enum Direction {
   UP = 0,
   RIGHT = 1,
@@ -22,58 +27,87 @@ typedef enum Direction {
 } Direction;
 
 static TaskHandle_t input_task_handle;
-int snake_length = 2;
-Cell head = {.col = COLS / 2, .row = ROWS / 2};
-Snake_CellValue snake_board[ROWS][COLS] = {0};
-Direction current_direction;
 
-Direction directions[4] = {UP, RIGHT, DOWN, LEFT};
-Direction get_next_direction(Direction curr) {
+static Cell snake_body[MAX_SNAKE_LENGTH];
+static int snake_length;
+static int head_index;
+
+static Snake_CellValue snake_board[ROWS][COLS];
+static Direction current_direction;
+
+static const Direction directions[4] = {UP, RIGHT, DOWN, LEFT};
+
+static int get_tail_index(void) {
+  return (head_index - snake_length + MAX_SNAKE_LENGTH) % MAX_SNAKE_LENGTH;
+}
+
+static Cell get_tail(void) { return snake_body[get_tail_index()]; }
+
+static Cell get_head(void) { return snake_body[head_index]; }
+
+static Direction get_next_direction(Direction curr) {
   return directions[(curr + 1) % 4];
 }
 
-Direction get_prev_direction(Direction curr) {
-  return directions[(curr - 1) % 4];
+static Direction get_prev_direction(Direction curr) {
+  return directions[(curr + 3) % 4];
 }
 
-void generate_new_apple() {
+static Direction get_opposite_direction(Direction direction) {
+  return (direction + 2) % 4;
+}
+
+static void generate_new_apple(void) {
   int row;
   int col;
-  bool free = false;
-  while (!free) {
+
+  do {
     row = random_range(0, ROWS - 1);
     col = random_range(0, COLS - 1);
-    if (snake_board[row][col] == NONE)
-      free = true;
-  }
+  } while (snake_board[row][col] != NONE);
+
   snake_board[row][col] = APPLE;
 }
 
-void snake_restart() {
-  for (int row = 0; row < ROWS; row++)
-    for (int col = 0; col < COLS; col++)
-      snake_board[row][col] = NONE;
-
-  head.row = ROWS / 2;
-  head.col = COLS / 2;
+static void snake_restart(void) {
+  memset(snake_board, NONE, sizeof(snake_board));
+  snake_length = 2;
+  head_index = 1;
   current_direction = LEFT;
-  snake_board[head.row][head.col] = SNAKE;
-  snake_board[head.row][head.col + 1] = SNAKE;
+  snake_body[0] = (Cell){
+      .row = ROWS / 2,
+      .col = COLS / 2 + 1,
+  };
+  snake_body[1] = (Cell){
+      .row = ROWS / 2,
+      .col = COLS / 2,
+  };
+  for (int i = 0; i < snake_length; i++) {
+    Cell cell = snake_body[i];
+    snake_board[cell.row][cell.col] = SNAKE;
+  }
   generate_new_apple();
 }
 
-void handle_input(void *args) {
+static void handle_input(void *args) {
   while (1) {
     RotaryDirection dir = rotary_encoder_direction(&rotary_encoder);
+    Direction next_direction = current_direction;
+
     if (dir == ROTARY_CLOCKWISE)
-      current_direction = get_next_direction(current_direction);
+      next_direction = get_next_direction(current_direction);
+
     if (dir == ROTARY_COUNTERCLOCKWISE)
-      current_direction = get_prev_direction(current_direction);
-    vTaskDelay(pdMS_TO_TICKS(10));
+      next_direction = get_prev_direction(current_direction);
+
+    if (next_direction != get_opposite_direction(current_direction))
+      current_direction = next_direction;
+
+    vTaskDelay(pdMS_TO_TICKS(INPUT_INTERVAL_MS));
   }
 }
 
-void snake_draw_cell(int row, int col) {
+static void snake_draw_cell(int row, int col) {
   int x = col * CELL_SIZE;
   int y = row * CELL_SIZE;
 
@@ -89,44 +123,24 @@ void snake_draw_cell(int row, int col) {
   }
 }
 
-void snake_board_display() {
+static void snake_board_display(void) {
   for (int row = 0; row < ROWS; row++)
     for (int col = 0; col < COLS; col++)
       snake_draw_cell(row, col);
+
   oled_update(&oled);
 }
 
-Cell get_tail(void) {
-  for (int row = 0; row < ROWS; row++) {
-    for (int col = 0; col < COLS; col++) {
-      if (snake_board[row][col] != SNAKE ||
-          (head.row == row && head.col == col))
-        continue;
-
-      int free_cells = 0;
-      if (row + 1 >= ROWS || snake_board[row + 1][col] != SNAKE)
-        free_cells++;
-      if (row - 1 < 0 || snake_board[row - 1][col] != SNAKE)
-        free_cells++;
-      if (col + 1 >= COLS || snake_board[row][col + 1] != SNAKE)
-        free_cells++;
-      if (col - 1 < 0 || snake_board[row][col - 1] != SNAKE)
-        free_cells++;
-      if (free_cells == 3)
-        return (Cell){.row = row, .col = col};
-    }
+static void input_stop(void) {
+  if (input_task_handle != NULL) {
+    vTaskDelete(input_task_handle);
+    input_task_handle = NULL;
   }
-  return head;
 }
 
-void input_stop() {
-  vTaskDelete(input_task_handle);
-  input_task_handle = NULL;
-}
+static bool move(void) {
+  Cell new_head = get_head();
 
-bool move() {
-  Cell new_head = head;
-  Cell tail = get_tail();
   switch (current_direction) {
   case LEFT:
     new_head.col--;
@@ -143,36 +157,50 @@ bool move() {
   }
 
   if (new_head.col < 0 || new_head.col >= COLS || new_head.row < 0 ||
-      new_head.row >= ROWS) {
+      new_head.row >= ROWS)
     return true;
+
+  bool eating = snake_board[new_head.row][new_head.col] == APPLE;
+  Cell tail = get_tail();
+
+  bool moving_into_tail = new_head.row == tail.row && new_head.col == tail.col;
+
+  if (snake_board[new_head.row][new_head.col] == SNAKE &&
+      (eating || !moving_into_tail))
+    return true;
+
+  if (!eating) {
+    snake_board[tail.row][tail.col] = NONE;
+  } else {
+    snake_length++;
   }
 
-  switch (snake_board[new_head.row][new_head.col]) {
-  case NONE:
-    snake_board[new_head.row][new_head.col] = SNAKE;
-    snake_board[tail.row][tail.col] = NONE;
-    break;
-  case APPLE:
-    snake_board[new_head.row][new_head.col] = SNAKE;
-    snake_length++;
+  head_index = (head_index + 1) % MAX_SNAKE_LENGTH;
+  snake_body[head_index] = new_head;
+
+  snake_board[new_head.row][new_head.col] = SNAKE;
+
+  if (eating)
     generate_new_apple();
-    break;
-  case SNAKE:
-    input_stop();
-    return true;
-  }
-  head = new_head;
+
   return false;
 }
 
 void snake_play(void) {
-  bool back = false;
   snake_restart();
+
   xTaskCreate(handle_input, "input_task", 4096, NULL, 2, &input_task_handle);
-  while (!back) {
+
+  bool game_over = false;
+
+  while (!game_over) {
+    game_over = move();
+
     oled_clear(&oled);
     snake_board_display();
-    move();
-    vTaskDelay(pdMS_TO_TICKS(700));
+
+    vTaskDelay(pdMS_TO_TICKS(MOVE_INTERVAL_MS));
   }
+
+  input_stop();
 }

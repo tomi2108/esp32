@@ -10,5 +10,6 @@
 #include "oled.h"
 #include "random.h"
 #include "rotary_encoder.h"
+#include <string.h>
 
 void snake_play();
