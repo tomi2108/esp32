@@ -580,43 +580,54 @@ void oled_draw_modal(OLED *oled, Modal *modal) {
   const int line_height = oled->font.height + 1;
   const int content_x = modal->x + padding + 2;
   const int content_y = modal->y + padding + 2;
+
   oled_fill_rectangle(oled, modal->x, modal->y, modal->width, modal->height,
                       true);
   oled_fill_rectangle(oled, modal->x + padding, modal->y + padding,
                       modal->width - padding * 2, modal->height - padding * 2,
                       false);
-  if (modal->title != NULL)
-    oled_write_text(oled, content_x, content_y, false, "%s", modal->title);
-  if (modal->description != NULL)
-    oled_write_text(oled, content_x, content_y + line_height, false, "%s",
-                    modal->description);
-  int item_y = content_y + line_height * 2;
+
+  int text_y = content_y;
+
+  if (modal->title[0] != '\0') {
+    oled_write_text(oled, content_x, text_y, false, "%s", modal->title);
+    text_y += line_height;
+  }
+
+  if (modal->description[0] != '\0') {
+    oled_write_text(oled, content_x, text_y, false, "%s", modal->description);
+    text_y += line_height;
+  }
+
+  int item_y = text_y;
 
   for (size_t i = 0; i < modal->item_count; i++) {
     const ModalItem *item = &modal->items[i];
     int item_x = content_x;
-    int text_y = item_y;
+    int item_text_y = item_y;
 
     if (item->bitmap != NULL) {
       oled_draw_bitmap(oled, item_x, item_y, item->bitmap_width,
                        item->bitmap_height, false, item->bitmap);
 
       item_x += item->bitmap_width + 2;
-      text_y = item_y + item->bitmap_height / 2;
+      item_text_y = item_y + item->bitmap_height / 2;
     }
 
     if (item->label != NULL)
-      oled_write_text(oled, item_x, text_y, false, "%s: %d", item->label,
+      oled_write_text(oled, item_x, item_text_y, false, "%s: %d", item->label,
                       item->value);
     else
-      oled_write_text(oled, item_x, text_y, false, "%d", item->value);
+      oled_write_text(oled, item_x, item_text_y, false, "%d", item->value);
 
     item_y += item->bitmap != NULL && item->bitmap_height > line_height
                   ? item->bitmap_height
                   : line_height;
   }
+
   int options_y =
       modal->y + modal->height - padding - line_height * modal->menu->length;
+
   for (size_t i = 0; i < modal->menu->length; i++)
     oled_write_text(oled, content_x, options_y + line_height * i,
                     modal->menu->current == i, "%s",

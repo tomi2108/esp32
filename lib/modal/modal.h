@@ -12,8 +12,8 @@ typedef struct {
 } ModalItem;
 
 typedef struct {
-  const char *title;
-  const char *description;
+  char title[32];
+  char description[32];
   ModalItem *items;
   size_t item_count;
   Menu *menu;

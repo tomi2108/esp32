@@ -1,4 +1,6 @@
 #include "snake.h"
+#include <stdint.h>
+#include <stdio.h>
 
 #define CELL_SIZE 4
 #define ROWS (64 / CELL_SIZE)
@@ -17,7 +19,7 @@ typedef struct {
   int col;
 } Cell;
 
-typedef enum Snake_CellValue { NONE, APPLE, SNAKE } Snake_CellValue;
+typedef enum CellValue { NONE, APPLE, SNAKE } CellValue;
 
 typedef enum Direction {
   UP = 0,
@@ -32,7 +34,7 @@ static Cell snake_body[MAX_SNAKE_LENGTH];
 static int snake_length;
 static int head_index;
 
-static Snake_CellValue snake_board[ROWS][COLS];
+static CellValue board[ROWS][COLS];
 static Direction current_direction;
 
 static const Direction directions[4] = {UP, RIGHT, DOWN, LEFT};
@@ -64,29 +66,9 @@ static void generate_new_apple(void) {
   do {
     row = random_range(0, ROWS - 1);
     col = random_range(0, COLS - 1);
-  } while (snake_board[row][col] != NONE);
+  } while (board[row][col] != NONE);
 
-  snake_board[row][col] = APPLE;
-}
-
-static void snake_restart(void) {
-  memset(snake_board, NONE, sizeof(snake_board));
-  snake_length = 2;
-  head_index = 1;
-  current_direction = LEFT;
-  snake_body[0] = (Cell){
-      .row = ROWS / 2,
-      .col = COLS / 2 + 1,
-  };
-  snake_body[1] = (Cell){
-      .row = ROWS / 2,
-      .col = COLS / 2,
-  };
-  for (int i = 0; i < snake_length; i++) {
-    Cell cell = snake_body[i];
-    snake_board[cell.row][cell.col] = SNAKE;
-  }
-  generate_new_apple();
+  board[row][col] = APPLE;
 }
 
 static void handle_input(void *args) {
@@ -107,11 +89,32 @@ static void handle_input(void *args) {
   }
 }
 
-static void snake_draw_cell(int row, int col) {
+static void restart(void) {
+  xTaskCreate(handle_input, "input_task", 4096, NULL, 2, &input_task_handle);
+  memset(board, NONE, sizeof(board));
+  snake_length = 2;
+  head_index = 1;
+  current_direction = LEFT;
+  snake_body[0] = (Cell){
+      .row = ROWS / 2,
+      .col = COLS / 2 + 1,
+  };
+  snake_body[1] = (Cell){
+      .row = ROWS / 2,
+      .col = COLS / 2,
+  };
+  for (int i = 0; i < snake_length; i++) {
+    Cell cell = snake_body[i];
+    board[cell.row][cell.col] = SNAKE;
+  }
+  generate_new_apple();
+}
+
+static void draw_cell(int row, int col) {
   int x = col * CELL_SIZE;
   int y = row * CELL_SIZE;
 
-  switch (snake_board[row][col]) {
+  switch (board[row][col]) {
   case NONE:
     break;
   case SNAKE:
@@ -123,10 +126,10 @@ static void snake_draw_cell(int row, int col) {
   }
 }
 
-static void snake_board_display(void) {
+static void board_display(void) {
   for (int row = 0; row < ROWS; row++)
     for (int col = 0; col < COLS; col++)
-      snake_draw_cell(row, col);
+      draw_cell(row, col);
 
   oled_update(&oled);
 }
@@ -160,17 +163,17 @@ static bool move(void) {
       new_head.row >= ROWS)
     return true;
 
-  bool eating = snake_board[new_head.row][new_head.col] == APPLE;
+  bool eating = board[new_head.row][new_head.col] == APPLE;
   Cell tail = get_tail();
 
   bool moving_into_tail = new_head.row == tail.row && new_head.col == tail.col;
 
-  if (snake_board[new_head.row][new_head.col] == SNAKE &&
+  if (board[new_head.row][new_head.col] == SNAKE &&
       (eating || !moving_into_tail))
     return true;
 
   if (!eating) {
-    snake_board[tail.row][tail.col] = NONE;
+    board[tail.row][tail.col] = NONE;
   } else {
     snake_length++;
   }
@@ -178,7 +181,7 @@ static bool move(void) {
   head_index = (head_index + 1) % MAX_SNAKE_LENGTH;
   snake_body[head_index] = new_head;
 
-  snake_board[new_head.row][new_head.col] = SNAKE;
+  board[new_head.row][new_head.col] = SNAKE;
 
   if (eating)
     generate_new_apple();
@@ -186,21 +189,89 @@ static bool move(void) {
   return false;
 }
 
-void snake_play(void) {
-  snake_restart();
+static int calculate_score(void) {
+  int apples_eaten = snake_length - 2;
+  int score = apples_eaten * 50;
+  return score > 1000 ? 1000 : score;
+}
 
-  xTaskCreate(handle_input, "input_task", 4096, NULL, 2, &input_task_handle);
+bool show_retry(void) {
+  Option options[2] = {
+      {.key = "Reintentar", .value = 0},
+      {.key = "Salir", .value = 1},
+  };
+  Menu menu = {
+      .buzzer = &buzzer,
+      .length = 2,
+      .current = 0,
+      .selected = -1,
+      .options = options,
+  };
+  Modal modal = {
+      .menu = &menu,
+      .height = 60,
+      .width = 80,
+      .x = 24,
+      .y = 2,
+  };
 
-  bool game_over = false;
+  if (snake_length == MAX_SNAKE_LENGTH)
+    snprintf(modal.title, sizeof(modal.title), "%s", "Ganaste!");
+  else
+    snprintf(modal.title, sizeof(modal.title), "%s", "Perdiste :(");
 
-  while (!game_over) {
-    game_over = move();
+  int score = calculate_score();
+  snprintf(modal.description, 12, "%d puntos", score);
+  spinner_start(&oled, 64, 32);
+  int32_t coins = api_publish_score("snake", score);
+  spinner_stop();
+
+  ModalItem items[] = {{
+      .bitmap = icons_rpg_coin_gold_currency_money_gp(),
+      .bitmap_width = ICON_WIDTH,
+      .bitmap_height = ICON_HEIGHT,
+      .value = coins,
+  }};
+  modal.item_count = 1;
+  modal.items = items;
+
+  while (menu.selected == -1) {
+    RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
+    RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
+
+    if (click == ROTARY_CLICK_SINGLE) {
+      rotary_encoder_wait_for_release(&rotary_encoder);
+      menu_select(&menu);
+    }
+
+    if (direction == ROTARY_CLOCKWISE)
+      menu_next(&menu);
+
+    if (direction == ROTARY_COUNTERCLOCKWISE)
+      menu_prev(&menu);
 
     oled_clear(&oled);
-    snake_board_display();
-
-    vTaskDelay(pdMS_TO_TICKS(MOVE_INTERVAL_MS));
+    oled_draw_modal(&oled, &modal);
+    oled_update(&oled);
+    vTaskDelay(pdMS_TO_TICKS(10));
   }
 
-  input_stop();
+  return menu.selected == 0;
+}
+
+void snake_play(void) {
+  restart();
+  while (1) {
+    bool game_over = move();
+    if (game_over) {
+      input_stop();
+      if (show_retry())
+        restart();
+      else
+        break;
+    }
+    oled_clear(&oled);
+    board_display();
+    vTaskDelay(pdMS_TO_TICKS(MOVE_INTERVAL_MS));
+  }
 }
