@@ -117,13 +117,12 @@ void shop_get(void) {
 }
 
 static void shop_refresh_task(void *arg) {
-  (void)arg;
   shop_get();
-  vTaskDelete(NULL);
+  task_stop("shop_refresh");
 }
 
 void shop_refresh_async(void) {
-  xTaskCreate(shop_refresh_task, "shop_refresh", 8192, NULL, 0, NULL);
+  task_start("shop_refresh", shop_refresh_task, NULL);
 }
 
 static void buy(int32_t item_id) {

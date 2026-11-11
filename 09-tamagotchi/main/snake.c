@@ -1,4 +1,6 @@
 #include "snake.h"
+#include "buzzer.h"
+#include "task.h"
 #include <stdint.h>
 #include <stdio.h>
 
@@ -27,8 +29,6 @@ typedef enum Direction {
   DOWN = 2,
   LEFT = 3,
 } Direction;
-
-static TaskHandle_t input_task_handle;
 
 static Cell snake_body[MAX_SNAKE_LENGTH];
 static int snake_length;
@@ -90,7 +90,7 @@ static void handle_input(void *args) {
 }
 
 static void restart(void) {
-  xTaskCreate(handle_input, "input_task", 4096, NULL, 2, &input_task_handle);
+  task_start("snake_input", handle_input, NULL);
   memset(board, NONE, sizeof(board));
   snake_length = 2;
   head_index = 1;
@@ -134,12 +134,7 @@ static void board_display(void) {
   oled_update(&oled);
 }
 
-static void input_stop(void) {
-  if (input_task_handle != NULL) {
-    vTaskDelete(input_task_handle);
-    input_task_handle = NULL;
-  }
-}
+static void input_stop(void) { task_stop("snake_input"); }
 
 static bool move(void) {
   Cell new_head = get_head();
@@ -183,8 +178,11 @@ static bool move(void) {
 
   board[new_head.row][new_head.col] = SNAKE;
 
-  if (eating)
+  if (eating) {
+    buzzer_set_frequency(&buzzer, 440);
+    buzzer_tone_ms(buzzer, 100);
     generate_new_apple();
+  }
 
   return false;
 }
@@ -222,7 +220,7 @@ bool show_retry(void) {
 
   int score = calculate_score();
   snprintf(modal.description, 12, "%d puntos", score);
-  spinner_start(&oled, 64, 32);
+  spinner_start(&oled, 65, 32);
   int32_t coins = api_publish_score("snake", score);
   spinner_stop();
 

@@ -1,5 +1,6 @@
 
 #include "inventory.h"
+#include "task.h"
 
 #include <string.h>
 
@@ -126,13 +127,12 @@ static bool inventory_fetch(void) {
 }
 
 static void inventory_refresh_task(void *arg) {
-  (void)arg;
   inventory_fetch();
-  vTaskDelete(NULL);
+  task_stop("inventory_refresh");
 }
 
 void inventory_refresh_async(void) {
-  xTaskCreate(inventory_refresh_task, "inventory_refresh", 8192, NULL, 0, NULL);
+  task_start("inventory_refresh", inventory_refresh_task, NULL);
 }
 
 static int inventory_find(InventoryItem items[], int size, int32_t item_id) {

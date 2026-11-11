@@ -4,7 +4,6 @@
 #include "assets.h"
 #include "buzzer.h"
 #include "client.h"
-#include "display.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "icons.h"

@@ -13,6 +13,7 @@
 #include "oled.h"
 #include "response.h"
 #include "rotary_encoder.h"
+#include "task.h"
 #include "wallet.h"
 #include <inttypes.h>
 

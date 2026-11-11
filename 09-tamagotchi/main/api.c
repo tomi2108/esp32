@@ -30,7 +30,7 @@ int32_t api_publish_score(char *game_code, int32_t score) {
   json_object_end(body);
 
   Response *res =
-      client_send_post(http_client, json_buffer(body), "/minigames/score");
+      client_send_post(http_client, json_buffer(body), "/minigames/scores");
   json_destroy(body);
 
   t_json_value *res_body = json_parse_buffer(res->body);

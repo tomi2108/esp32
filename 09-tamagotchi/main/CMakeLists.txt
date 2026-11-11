@@ -1,9 +1,9 @@
 idf_component_register(
     SRCS "main.c"
     "actions.c"
+    "display.c"
     "api.c"
     "assets.c"
-    "display.c"
     "games.c"
     "inbox.c"
     "inventory.c"
@@ -13,6 +13,7 @@ idf_component_register(
     "snake.c"
     "spinner.c"
     "state.c"
+    "task.c"
     "tictactoe.c"
     "toolbar.c"
     "wallet.c"

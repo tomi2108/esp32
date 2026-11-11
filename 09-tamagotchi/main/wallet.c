@@ -2,6 +2,7 @@
 #include "icons.h"
 #include "oled.h"
 #include "shop.h"
+#include "task.h"
 
 extern PassiveBuzzer buzzer;
 extern int wholenote;
@@ -38,11 +39,11 @@ void wallet_get(void) {
 
 static void wallet_refresh_task(void *arg) {
   wallet_get();
-  vTaskDelete(NULL);
+  task_stop("wallet_refresh");
 }
 
 void wallet_refresh_async(void) {
-  xTaskCreate(wallet_refresh_task, "wallet_refresh", 8192, NULL, 0, NULL);
+  task_start("wallet_refresh", wallet_refresh_task, NULL);
 }
 
 void wallet_display(int x, int y) {

@@ -1,6 +1,7 @@
 #include "inbox.h"
 #include "icons.h"
 #include "oled.h"
+#include "task.h"
 
 extern PassiveBuzzer buzzer;
 extern int wholenote;
@@ -55,8 +56,7 @@ void inbox_add(Message m) {
 static void mark_as_read_task(void *arg) {
   char *path = arg;
   client_send_patch(http_client, path);
-  free(path);
-  vTaskDelete(NULL);
+  task_stop("mark_as_read");
 }
 
 void mark_as_read(const char *id) {
@@ -66,11 +66,7 @@ void mark_as_read(const char *id) {
   if (path == NULL)
     return;
   snprintf(path, 128, "/message/%s/read?", id);
-  if (xTaskCreate(mark_as_read_task, "mark_as_read", 4096, path, 5, NULL) !=
-      pdPASS) {
-    free(path);
-    ESP_LOGE("inbox", "Failed to create mark-as-read task");
-  }
+  task_start("mark_as_read", mark_as_read_task, NULL);
 }
 
 void inbox_read(int index) {
