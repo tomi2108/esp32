@@ -1,7 +1,7 @@
+#include "wallet.h"
 #include "esp_log.h"
 #include "icons.h"
 #include "oled.h"
-#include "shop.h"
 #include "task.h"
 
 extern PassiveBuzzer buzzer;
