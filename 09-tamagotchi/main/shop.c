@@ -1,6 +1,5 @@
 #include "shop.h"
-
-static const char *TAG = "SHOP";
+#include "toolbar.h"
 
 extern PassiveBuzzer buzzer;
 extern int wholenote;
@@ -45,25 +44,20 @@ void decode_item(const t_json_value *body, ShopItem *out) {
   out->rarity = json_value_string(json_object_get(body, "rarity"));
 }
 
-void shop_get(void) {
+static void shop_refresh_task(void *arg) {
   Response *shop_res = client_send_get(http_client, "/shop");
 
-  if (!shop_res || !shop_res->body) {
-    ESP_LOGE(TAG, "Failed to fetch shop");
+  if (!shop_res || !shop_res->body)
     return;
-  }
 
   t_json_value *shop_body = json_parse_buffer(shop_res->body);
 
-  if (!shop_body) {
-    ESP_LOGE(TAG, "Failed to parse shop response");
+  if (!shop_body)
     return;
-  }
 
   const t_json_value *items = json_object_get(shop_body, "items");
 
   if (!items) {
-    ESP_LOGE(TAG, "Shop response has no items");
     json_value_destroy(shop_body);
     return;
   }
@@ -116,11 +110,6 @@ void shop_get(void) {
   json_value_destroy(shop_body);
 }
 
-static void shop_refresh_task(void *arg) {
-  shop_get();
-  task_stop("shop_refresh");
-}
-
 void shop_refresh_async(void) {
   task_start("shop_refresh", shop_refresh_task, NULL);
 }
@@ -134,12 +123,7 @@ static void buy(int32_t item_id) {
 
 void display_refresh_time(void) {}
 
-void shop_display(void) {
-  bool back = false;
-
-  shop_menu.current = 0;
-  shop_menu.selected = -1;
-
+void shop_render(Screen *self) {
   const OLEDMenu menu_config = {
       .menu = shop_menu,
       .header = &shop_header,
@@ -148,40 +132,47 @@ void shop_display(void) {
       .bitmap_height = 16,
   };
 
-  while (!back) {
-    RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
-    RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
-
-    if (click == ROTARY_CLICK_DOUBLE) {
-      back = true;
-      continue;
-    }
-
-    if (shop_size == 0) {
-      oled_clear(&oled);
-      oled_write_text(&oled, 0, oled.height / 2 - 3, false, "Shop empty");
-      oled_update(&oled);
-      vTaskDelay(pdMS_TO_TICKS(100));
-      continue;
-    }
-
-    if (direction == ROTARY_CLOCKWISE)
-      menu_next(&shop_menu);
-
-    if (direction == ROTARY_COUNTERCLOCKWISE)
-      menu_prev(&shop_menu);
-
-    if (click == ROTARY_CLICK_SINGLE && shop_menu.current >= 0 &&
-        shop_menu.current < shop_size)
-      buy(shop_menu.options[shop_menu.current].value);
-
-    OLEDMenu current_menu = menu_config;
-    current_menu.menu = shop_menu;
-
-    oled_display_menu(&oled, &current_menu);
-    display_refresh_time();
-    oled_update(&oled);
-
-    vTaskDelay(pdMS_TO_TICKS(10));
+  if (shop_size == 0) {
+    oled_write_text(&oled, 0, oled.height / 2 - 3, false, "Shop empty");
+    return;
   }
+
+  OLEDMenu current_menu = menu_config;
+  current_menu.menu = shop_menu;
+
+  oled_display_menu(&oled, &current_menu);
+  display_refresh_time();
+  return;
 }
+
+void shop_update(Screen *self) {
+  RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
+  RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
+
+  if (click == ROTARY_CLICK_DOUBLE)
+    screen_pop();
+
+  if (shop_size == 0)
+    return;
+
+  if (direction == ROTARY_CLOCKWISE)
+    menu_next(&shop_menu);
+
+  if (direction == ROTARY_COUNTERCLOCKWISE)
+    menu_prev(&shop_menu);
+
+  if (click == ROTARY_CLICK_SINGLE && shop_menu.current >= 0 &&
+      shop_menu.current < shop_size)
+    buy(shop_menu.options[shop_menu.current].value);
+}
+
+Screen shop_screen = {
+    .render = shop_render,
+    .update = shop_update,
+};
+
+void shop_display(void) {
+  shop_menu.current = 0;
+  shop_menu.selected = -1;
+  screen_push(shop_screen);
+};

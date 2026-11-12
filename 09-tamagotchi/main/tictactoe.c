@@ -5,11 +5,11 @@
 #define PADDING_Y 2
 
 extern PassiveBuzzer buzzer;
-extern int wholenote;
 extern OLED oled;
 extern RotaryEncoder rotary_encoder;
 
-typedef enum CellValue { NONE, PLAYER_1, PLAYER_PC } CellValue;
+typedef enum { NONE, PLAYER_1, PLAYER_PC } CellValue;
+
 typedef enum {
   GAME_ONGOING,
   GAME_PLAYER_WON,
@@ -17,39 +17,71 @@ typedef enum {
   GAME_DRAW
 } GameResult;
 
-static CellValue board[3][3] = {0};
+typedef enum {
+  TTT_PLAYING,
+  TTT_GAME_OVER,
+} TTTState;
 
-void draw_player_one(int row, int col, bool on) {
+static CellValue board[3][3];
+static int cursor_row;
+static int cursor_col;
+static TTTState game_state;
+
+static volatile bool score_loading;
+static volatile bool score_loaded;
+static volatile int32_t earned_coins;
+
+static GameResult final_result;
+
+static void game_over_menu_select(void *ctx, int32_t selected);
+static void game_over_render(Overlay *self);
+static void game_over_update(Overlay *self);
+
+static Overlay game_over_overlay = {
+    .render = game_over_render,
+    .update = game_over_update,
+};
+
+static void restart(void) {
+  memset(board, NONE, sizeof(board));
+  cursor_row = 0;
+  cursor_col = 0;
+  game_state = TTT_PLAYING;
+}
+
+static void draw_player_one(int row, int col, bool on) {
   int x = PADDING_X + col * CELL_SIZE;
   int y = PADDING_Y + row * CELL_SIZE;
   int padding = 5;
   oled_draw_line(&oled, x + padding, y + padding, x + CELL_SIZE - padding,
                  y + CELL_SIZE - padding, on);
+
   oled_draw_line(&oled, x + CELL_SIZE - padding, y + padding, x + padding,
                  y + CELL_SIZE - padding, on);
 }
 
-void draw_player_two(int row, int col, bool on) {
+static void draw_player_two(int row, int col, bool on) {
   int x = PADDING_X + col * CELL_SIZE;
   int y = PADDING_Y + row * CELL_SIZE;
   oled_draw_circle(&oled, x + CELL_SIZE / 2, y + CELL_SIZE / 2, 5, 7, on);
 }
 
-static void draw_cell(int row, int col, bool on) {
+static void draw_cell(int row, int col) {
   switch (board[row][col]) {
   case NONE:
     break;
+
   case PLAYER_1:
-    draw_player_one(row, col, on);
+    draw_player_one(row, col, true);
     break;
 
   case PLAYER_PC:
-    draw_player_two(row, col, on);
+    draw_player_two(row, col, true);
     break;
   }
 }
 
-static void board_display(void) {
+static void draw_board(void) {
   for (int i = 1; i < 3; i++) {
     int y = PADDING_Y + CELL_SIZE * i;
     oled_draw_line(&oled, PADDING_X, y, PADDING_X + CELL_SIZE * 3, y, true);
@@ -62,92 +94,12 @@ static void board_display(void) {
 
   for (int row = 0; row < 3; row++) {
     for (int col = 0; col < 3; col++) {
-      draw_cell(row, col, true);
+      draw_cell(row, col);
     }
   }
-
-  oled_update(&oled);
 }
 
-void play_turn() {
-  int row = 0;
-  int col = 0;
-  bool selected = false;
-
-  while (!selected) {
-    int x = PADDING_X + 1 + col * CELL_SIZE;
-    int y = PADDING_Y + 1 + row * CELL_SIZE;
-
-    RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
-    RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
-
-    if (click == ROTARY_CLICK_SINGLE) {
-      rotary_encoder_wait_for_release(&rotary_encoder);
-      if (board[row][col] == NONE)
-        selected = true;
-    }
-
-    if (direction == ROTARY_CLOCKWISE) {
-      buzzer_set_frequency(&buzzer, 393);
-      buzzer_tone_ms(buzzer, 100);
-      oled_fill_square(&oled, x, y, CELL_SIZE - 2, false);
-      draw_cell(row, col, true);
-      col++;
-    }
-
-    if (direction == ROTARY_COUNTERCLOCKWISE) {
-      buzzer_set_frequency(&buzzer, 550);
-      buzzer_tone_ms(buzzer, 100);
-      oled_fill_square(&oled, x, y, CELL_SIZE - 2, false);
-      draw_cell(row, col, true);
-      col--;
-    }
-
-    if (col == 3) {
-      col = 0;
-      row++;
-    }
-    if (col == -1) {
-      col = 2;
-      row--;
-    }
-    if (row == 3) {
-      col = 0;
-      row = 0;
-    }
-    if (row == -1) {
-      col = 2;
-      row = 2;
-    }
-
-    x = PADDING_X + 1 + col * CELL_SIZE;
-    y = PADDING_Y + 1 + row * CELL_SIZE;
-    oled_fill_square(&oled, x, y, CELL_SIZE - 2, true);
-    draw_cell(row, col, false);
-
-    oled_update(&oled);
-    vTaskDelay(pdMS_TO_TICKS(10));
-  }
-
-  board[row][col] = PLAYER_1;
-}
-
-void pc_turn() {
-  int row;
-  int col;
-  bool taken = true;
-  while (taken) {
-    row = random_range(0, 2);
-    col = random_range(0, 2);
-    if (board[row][col] == NONE)
-      taken = false;
-  }
-  board[row][col] = PLAYER_PC;
-}
-
-static int calculate_score(GameResult result) {
-  if (result != GAME_PLAYER_WON)
-    return 0;
+static int calculate_score(void) {
   int pieces = 0;
   for (int row = 0; row < 3; row++) {
     for (int col = 0; col < 3; col++) {
@@ -163,88 +115,7 @@ static int calculate_score(GameResult result) {
   return score;
 }
 
-static bool show_retry(GameResult result) {
-  Option options[2] = {
-      {.key = "Revancha", .value = 0},
-      {.key = "Salir", .value = 1},
-  };
-  Menu menu = {
-      .buzzer = &buzzer,
-      .length = 2,
-      .current = 0,
-      .selected = -1,
-      .options = options,
-  };
-  Modal modal = {
-      .menu = &menu,
-      .height = 60,
-      .width = 80,
-      .x = 24,
-      .y = 2,
-  };
-
-  switch (result) {
-  case GAME_ONGOING:
-    return false;
-  case GAME_PLAYER_WON:
-    snprintf(modal.title, sizeof(modal.title), "%s", "Ganaste!");
-    break;
-  case GAME_PC_WON:
-    snprintf(modal.title, sizeof(modal.title), "%s", "Perdiste :(");
-    break;
-  case GAME_DRAW:
-    snprintf(modal.title, sizeof(modal.title), "%s", "Empate...");
-    break;
-  }
-
-  if (result == GAME_PLAYER_WON) {
-    int score = calculate_score(result);
-    snprintf(modal.description, 12, "%d puntos", score);
-    spinner_start(&oled, 64, 32);
-    int32_t coins = api_publish_score("tictactoe", score);
-    spinner_stop();
-
-    ModalItem items[] = {{
-        .bitmap = icons_rpg_coin_gold_currency_money_gp(),
-        .bitmap_width = ICON_WIDTH,
-        .bitmap_height = ICON_HEIGHT,
-        .value = coins,
-    }};
-    modal.item_count = 1;
-    modal.items = items;
-  }
-
-  while (menu.selected == -1) {
-    RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
-    RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
-
-    if (click == ROTARY_CLICK_SINGLE) {
-      rotary_encoder_wait_for_release(&rotary_encoder);
-      menu_select(&menu);
-    }
-
-    if (direction == ROTARY_CLOCKWISE)
-      menu_next(&menu);
-
-    if (direction == ROTARY_COUNTERCLOCKWISE)
-      menu_prev(&menu);
-
-    oled_clear(&oled);
-    oled_draw_modal(&oled, &modal);
-    oled_update(&oled);
-    vTaskDelay(pdMS_TO_TICKS(10));
-  }
-
-  return menu.selected == 0;
-}
-
-static void restart() {
-  for (int i = 0; i < 3; i++)
-    for (int j = 0; j < 3; j++)
-      board[i][j] = NONE;
-}
-
-GameResult check_end(void) {
+static GameResult check_end(void) {
   static const int wins[8][3][2] = {
       {{0, 0}, {0, 1}, {0, 2}}, {{1, 0}, {1, 1}, {1, 2}},
       {{2, 0}, {2, 1}, {2, 2}}, {{0, 0}, {1, 0}, {2, 0}},
@@ -255,35 +126,223 @@ GameResult check_end(void) {
   for (int i = 0; i < 8; i++) {
     CellValue value = board[wins[i][0][0]][wins[i][0][1]];
     if (value != NONE && value == board[wins[i][1][0]][wins[i][1][1]] &&
-        value == board[wins[i][2][0]][wins[i][2][1]])
+        value == board[wins[i][2][0]][wins[i][2][1]]) {
       return value == PLAYER_1 ? GAME_PLAYER_WON : GAME_PC_WON;
+    }
   }
 
-  for (int row = 0; row < 3; row++)
-    for (int col = 0; col < 3; col++)
+  for (int row = 0; row < 3; row++) {
+    for (int col = 0; col < 3; col++) {
       if (board[row][col] == NONE)
         return GAME_ONGOING;
+    }
+  }
+
   return GAME_DRAW;
 }
 
-void tictactoe_play(void) {
-  bool back = false;
-  while (!back) {
-    oled_clear(&oled);
-    board_display();
-    play_turn();
-    GameResult result = check_end();
-    if (result == GAME_ONGOING) {
-      pc_turn();
-      result = check_end();
+void pc_turn() {
+  int row;
+  int col;
+
+  do {
+    row = random_range(0, 2);
+    col = random_range(0, 2);
+  } while (board[row][col] != NONE);
+
+  board[row][col] = PLAYER_PC;
+}
+
+static void publish_score_task(void *args) {
+  earned_coins = api_publish_score("tictactoe", calculate_score());
+  wallet_refresh_async();
+  score_loading = false;
+  score_loaded = true;
+}
+
+static Option game_over_options[2] = {
+    {.key = "Revancha", .value = 0},
+    {.key = "Salir", .value = 1},
+};
+
+static Menu game_over_menu = {
+    .buzzer = &buzzer,
+    .length = 2,
+    .current = 0,
+    .selected = -1,
+    .on_select = game_over_menu_select,
+    .options = game_over_options,
+};
+
+static void game_over_init(GameResult result) {
+  game_state = TTT_GAME_OVER;
+  final_result = result;
+  game_over_menu.current = 0;
+  game_over_menu.selected = -1;
+
+  earned_coins = 0;
+  score_loading = result == GAME_PLAYER_WON;
+  score_loaded = false;
+
+  if (score_loading) {
+    spinner_start(&oled, 64, 32);
+    if (task_start("ttt_score", publish_score_task, NULL) != 0) {
+      score_loading = false;
+      score_loaded = true;
     }
-    board_display();
-    if (result != GAME_ONGOING) {
-      if (show_retry(result))
-        restart();
-      else
-        back = true;
-    }
-    vTaskDelay(pdMS_TO_TICKS(10));
   }
+  overlay_show(&game_over_overlay);
+}
+
+static void game_over_render(Overlay *self) {
+  if (score_loading || score_loaded)
+    return;
+
+  Modal modal = {
+      .menu = &game_over_menu,
+      .height = 60,
+      .width = 80,
+      .x = 24,
+      .y = 2,
+  };
+
+  switch (final_result) {
+  case GAME_ONGOING:
+    return;
+
+  case GAME_PLAYER_WON:
+    snprintf(modal.title, sizeof(modal.title), "%s", "Ganaste!");
+    snprintf(modal.description, sizeof(modal.description), "%d puntos",
+             calculate_score());
+    break;
+
+  case GAME_PC_WON:
+    snprintf(modal.title, sizeof(modal.title), "%s", "Perdiste :(");
+    break;
+
+  case GAME_DRAW:
+    snprintf(modal.title, sizeof(modal.title), "%s", "Empate...");
+    break;
+  }
+
+  if (final_result == GAME_PLAYER_WON) {
+    ModalItem items[] = {{
+        .bitmap = icons_rpg_coin_gold_currency_money_gp(),
+        .bitmap_width = ICON_WIDTH,
+        .bitmap_height = ICON_HEIGHT,
+        .value = earned_coins,
+    }};
+
+    modal.item_count = 1;
+    modal.items = items;
+  }
+  oled_draw_modal(&oled, &modal);
+}
+
+static void game_over_update(Overlay *self) {
+  if (score_loading)
+    return;
+  if (score_loaded) {
+    spinner_stop();
+    score_loaded = false;
+    return;
+  }
+
+  RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
+  RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
+
+  if (click == ROTARY_CLICK_SINGLE) {
+    rotary_encoder_wait_for_release(&rotary_encoder);
+    menu_select(&game_over_menu);
+  }
+
+  if (direction == ROTARY_CLOCKWISE)
+    menu_next(&game_over_menu);
+
+  if (direction == ROTARY_COUNTERCLOCKWISE)
+    menu_prev(&game_over_menu);
+}
+
+static void game_over_menu_select(void *ctx, int32_t selected) {
+  overlay_remove(&game_over_overlay);
+  if (selected == 0)
+    restart();
+  else if (selected == 1)
+    screen_pop();
+}
+
+static void move_cursor(RotaryDirection direction) {
+  if (direction == ROTARY_CLOCKWISE)
+    buzzer_set_frequency(&buzzer, 393);
+  else
+    buzzer_set_frequency(&buzzer, 550);
+
+  buzzer_tone_ms(buzzer, 100);
+
+  int index = cursor_row * 3 + cursor_col;
+
+  if (direction == ROTARY_CLOCKWISE)
+    index = (index + 1) % 9;
+  else
+    index = (index + 8) % 9;
+
+  cursor_row = index / 3;
+  cursor_col = index % 3;
+}
+
+static void player_turn(void) {
+  if (board[cursor_row][cursor_col] != NONE)
+    return;
+
+  board[cursor_row][cursor_col] = PLAYER_1;
+}
+
+static void ttt_update(Screen *self) {
+  if (game_state != TTT_PLAYING)
+    return;
+
+  RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
+  RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
+
+  if (direction == ROTARY_CLOCKWISE || direction == ROTARY_COUNTERCLOCKWISE) {
+    move_cursor(direction);
+  }
+
+  if (click == ROTARY_CLICK_SINGLE) {
+    rotary_encoder_wait_for_release(&rotary_encoder);
+    if (board[cursor_row][cursor_col] != NONE)
+      return;
+    player_turn();
+    GameResult result = check_end();
+    if (result != GAME_ONGOING) {
+      game_over_init(result);
+      return;
+    }
+    pc_turn();
+    result = check_end();
+    if (result != GAME_ONGOING)
+      game_over_init(result);
+  }
+}
+
+static void ttt_render(Screen *self) {
+  draw_board();
+
+  int x = PADDING_X + 1 + cursor_col * CELL_SIZE;
+  int y = PADDING_Y + 1 + cursor_row * CELL_SIZE;
+
+  oled_fill_square(&oled, x, y, CELL_SIZE - 2, true);
+
+  if (board[cursor_row][cursor_col] != NONE)
+    draw_cell(cursor_row, cursor_col);
+}
+
+static Screen ttt_screen = {
+    .render = ttt_render,
+    .update = ttt_update,
+};
+
+void tictactoe_play(void) {
+  restart();
+  screen_push(ttt_screen);
 }

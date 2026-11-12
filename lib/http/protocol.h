@@ -3,8 +3,8 @@
 
 #include "buffer.h"
 #include "list.h"
-#include <string.h>
 #include <stdint.h>
+#include <string.h>
 
 typedef char *Method;
 typedef char *Path;
@@ -20,6 +20,7 @@ typedef t_list *Headers;
 Headers headers_create();
 void headers_destroy(Headers headers);
 void headers_add(Headers h, char *key, char *value);
+bool headers_remove(Headers headers, char *key);
 char *headers_get(Headers h, char *key);
 
 Body body_create();

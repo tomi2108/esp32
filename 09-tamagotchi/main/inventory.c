@@ -1,6 +1,6 @@
-
 #include "inventory.h"
 #include "task.h"
+#include "toolbar.h"
 
 #include <string.h>
 
@@ -90,16 +90,16 @@ static void inventory_update_options(InventoryItem items[], int size) {
   }
 }
 
-static bool inventory_fetch(void) {
+static void inventory_refresh_task(void *arg) {
   Response *res = client_send_get(http_client, "/inventory");
 
   if (res == NULL || res->body == NULL)
-    return false;
+    return;
 
   t_json_value *body = json_parse_buffer(res->body);
 
   if (body == NULL)
-    return false;
+    return;
 
   equippables_size = 0;
   consumables_size = 0;
@@ -123,12 +123,7 @@ static bool inventory_fetch(void) {
     }
   }
 
-  return true;
-}
-
-static void inventory_refresh_task(void *arg) {
-  inventory_fetch();
-  task_stop("inventory_refresh");
+  return;
 }
 
 void inventory_refresh_async(void) {
@@ -186,67 +181,67 @@ static void inventory_use(InventoryCategory category, int32_t item_id) {
   inventory_refresh_async();
 }
 
-void inventory_display(bool equipabble) {
+void inventory_render(Screen *self) {
+  bool equippable = *(bool *)self->context;
   InventoryCategory category =
-      equipabble ? INVENTORY_EQUIPPABLE : INVENTORY_CONSUMABLE;
+      equippable ? INVENTORY_EQUIPPABLE : INVENTORY_CONSUMABLE;
 
   InventoryItem *items = inventory_get_items(category);
   int *size = inventory_get_size(category);
 
   const OLEDMenuHeader inventory_header = {
-      .title = equipabble ? "Ropita" : "Comida",
+      .title = equippable ? "Ropita" : "Comida",
       .inverted = true,
       .separator = true,
   };
+  inventory_update_options(items, *size);
 
-  bool back = false;
+  if (*size == 0) {
+    oled_write_text(&oled, 0, oled.height / 2 - 3, false, "Inventory empty");
+    return;
+  }
 
+  OLEDMenu menu_config = {
+      .menu = inventory_menu,
+      .header = &inventory_header,
+      .decorations = inventory_decorations,
+      .bitmap_width = ICON_WIDTH,
+      .bitmap_height = ICON_HEIGHT,
+  };
+
+  oled_display_menu(&oled, &menu_config);
+}
+void inventory_update(Screen *self) {
+  bool equippable = *(bool *)self->context;
+  InventoryCategory category =
+      equippable ? INVENTORY_EQUIPPABLE : INVENTORY_CONSUMABLE;
+  int *size = inventory_get_size(category);
+  RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
+  RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
+  if (click == ROTARY_CLICK_DOUBLE) {
+    screen_pop();
+  }
+
+  if (direction == ROTARY_CLOCKWISE)
+    menu_next(&inventory_menu);
+
+  if (direction == ROTARY_COUNTERCLOCKWISE)
+    menu_prev(&inventory_menu);
+
+  if (click == ROTARY_CLICK_SINGLE && inventory_menu.current >= 0 &&
+      inventory_menu.current < *size) {
+    int32_t item_id = inventory_menu.options[inventory_menu.current].value;
+    inventory_use(category, item_id);
+  }
+}
+
+Screen inventory_screen = {.render = inventory_render,
+                           .update = inventory_update};
+
+void inventory_display(bool equipabble) {
+  bool *ctx = malloc(sizeof(bool));
+  inventory_screen.context = ctx;
   inventory_menu.current = 0;
   inventory_menu.selected = -1;
-
-  while (!back) {
-    inventory_update_options(items, *size);
-
-    RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
-
-    RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
-
-    if (click == ROTARY_CLICK_DOUBLE) {
-      back = true;
-      continue;
-    }
-
-    if (*size == 0) {
-      oled_clear(&oled);
-      oled_write_text(&oled, 0, oled.height / 2 - 3, false, "Inventory empty");
-      oled_update(&oled);
-      vTaskDelay(pdMS_TO_TICKS(10));
-      continue;
-    }
-
-    if (direction == ROTARY_CLOCKWISE)
-      menu_next(&inventory_menu);
-
-    if (direction == ROTARY_COUNTERCLOCKWISE)
-      menu_prev(&inventory_menu);
-
-    if (click == ROTARY_CLICK_SINGLE && inventory_menu.current >= 0 &&
-        inventory_menu.current < *size) {
-      int32_t item_id = inventory_menu.options[inventory_menu.current].value;
-      inventory_use(category, item_id);
-    }
-
-    OLEDMenu menu_config = {
-        .menu = inventory_menu,
-        .header = &inventory_header,
-        .decorations = inventory_decorations,
-        .bitmap_width = ICON_WIDTH,
-        .bitmap_height = ICON_HEIGHT,
-    };
-
-    oled_display_menu(&oled, &menu_config);
-    oled_update(&oled);
-
-    vTaskDelay(pdMS_TO_TICKS(10));
-  }
+  screen_push(inventory_screen);
 }

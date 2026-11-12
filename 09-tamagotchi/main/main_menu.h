@@ -9,6 +9,7 @@
 #include "menu.h"
 #include "oled.h"
 #include "rotary_encoder.h"
+#include "screen.h"
 #include "shop.h"
 
 #define MAIN_MENU_LENGTH 5

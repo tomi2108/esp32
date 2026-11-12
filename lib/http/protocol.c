@@ -32,14 +32,29 @@ void header_destroy(Header *h) {
   free(h);
 }
 
-Headers headers_create() {
-  return list_create();
-}
+Headers headers_create() { return list_create(); }
 
 void headers_destroy(Headers headers) {
   if (headers == NULL)
     return;
   list_destroy_and_destroy_elements(headers, (void (*)(void *))&header_destroy);
+}
+
+bool headers_remove(Headers headers, char *key) {
+  if (headers == NULL || key == NULL)
+    return false;
+
+  for (size_t i = 0; i < list_size(headers); i++) {
+    Header *header = list_get(headers, i);
+
+    if (header != NULL && strcmp(key, header->key) == 0) {
+      Header *removed = list_remove(headers, i);
+      header_destroy(removed);
+      return true;
+    }
+  }
+
+  return false;
 }
 
 void headers_add(Headers h, char *key, char *value) {
@@ -64,13 +79,9 @@ char *headers_get(Headers h, char *key) {
   return NULL;
 }
 
-Body body_create() {
-  return buffer_create();
-}
+Body body_create() { return buffer_create(); }
 
-void body_destroy(Body body) {
-  buffer_destroy(body);
-}
+void body_destroy(Body body) { buffer_destroy(body); }
 
 void body_add_string(Body body, char *string, uint32_t length) {
   if (body != NULL && string != NULL) {

@@ -10,8 +10,12 @@
 #include "menu.h"
 #include "modal.h"
 #include "oled.h"
+#include "overlay.h"
 #include "random.h"
 #include "rotary_encoder.h"
+#include "screen.h"
 #include "spinner.h"
+#include "task.h"
+#include "wallet.h"
 
 void tictactoe_play();

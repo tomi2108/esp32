@@ -1,6 +1,8 @@
 #include "games.h"
 #include "icons.h"
+#include "screen.h"
 #include "tictactoe.h"
+#include "toolbar.h"
 
 extern PassiveBuzzer buzzer;
 extern int wholenote;
@@ -32,7 +34,7 @@ Menu games_menu = {.buzzer = &buzzer,
                    .length = GAMES_MENU_LENGTH,
                    .options = games_options};
 
-void display_games() {
+void games_menu_render(Screen *self) {
   const uint8_t h = ICON_HEIGHT;
   const uint8_t w = ICON_WIDTH;
   const uint8_t dx = w + 4;
@@ -58,36 +60,31 @@ void display_games() {
   }
 }
 
-void open_games_menu(void) {
-  bool back = false;
+void games_menu_update(Screen *self) {
+  RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
+  RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
+  if (click == ROTARY_CLICK_DOUBLE) {
+    screen_pop();
+  }
 
-  games_menu.current = 0;
-  games_menu.selected = -1;
+  if (direction == ROTARY_CLOCKWISE)
+    menu_next(&games_menu);
 
-  while (!back) {
-    oled_clear(&oled);
-    display_games();
-    RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
-    RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
+  if (direction == ROTARY_COUNTERCLOCKWISE)
+    menu_prev(&games_menu);
 
-    if (click == ROTARY_CLICK_DOUBLE) {
-      back = true;
-      continue;
-    }
-
-    if (direction == ROTARY_CLOCKWISE)
-      menu_next(&games_menu);
-
-    if (direction == ROTARY_COUNTERCLOCKWISE)
-      menu_prev(&games_menu);
-
-    if (click == ROTARY_CLICK_SINGLE && games_menu.current >= 0 &&
-        games_menu.current < GAMES_MENU_LENGTH) {
-      rotary_encoder_wait_for_release(&rotary_encoder);
-      menu_select(&games_menu);
-    }
-
-    oled_update(&oled);
-    vTaskDelay(pdMS_TO_TICKS(10));
+  if (click == ROTARY_CLICK_SINGLE && games_menu.current >= 0 &&
+      games_menu.current < GAMES_MENU_LENGTH) {
+    rotary_encoder_wait_for_release(&rotary_encoder);
+    menu_select(&games_menu);
   }
 }
+
+Screen games_menu_screen = {.render = games_menu_render,
+                            .update = games_menu_update};
+
+void open_games_menu(void) {
+  games_menu.current = 0;
+  games_menu.selected = -1;
+  screen_push(games_menu_screen);
+};

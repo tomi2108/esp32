@@ -1,6 +1,4 @@
 #include "api.h"
-#include "inbox.h"
-#include <stdint.h>
 
 extern HttpClient *http_client;
 
@@ -11,7 +9,11 @@ void api_buy_item(int32_t item_id) {
   json_int(body, item_id);
   json_object_end(body);
 
+  Headers headers = headers_create();
+  headers_add(headers, "Content-Type", "application/json");
+  http_client->headers = headers;
   client_send_post(http_client, json_buffer(body), "/shop");
+  headers_destroy(headers);
   json_destroy(body);
 }
 
@@ -29,12 +31,14 @@ int32_t api_publish_score(char *game_code, int32_t score) {
   json_int(body, PLAYER_ID);
   json_object_end(body);
 
+  headers_add(http_client->headers, "Content-Type", "application/json");
   Response *res =
       client_send_post(http_client, json_buffer(body), "/minigames/scores");
   json_destroy(body);
+  headers_remove(http_client->headers, "Content-Type");
 
   t_json_value *res_body = json_parse_buffer(res->body);
-  int32_t coins;
+  int32_t coins = 0;
   json_value_int(json_object_get(res_body, "coins"), &coins);
   return coins;
 }

@@ -12,7 +12,8 @@ extern MqttClient mqtt_client;
 extern HttpClient *http_client;
 
 int32_t wallet_coins = 0;
-void wallet_get(void) {
+
+static void wallet_refresh_task(void *arg) {
   Response *wallet_res = client_send_get(http_client, "/wallet");
 
   if (!wallet_res || !wallet_res->body) {
@@ -35,11 +36,6 @@ void wallet_get(void) {
     json_value_destroy(wallet_body);
   }
   response_destroy(wallet_res);
-}
-
-static void wallet_refresh_task(void *arg) {
-  wallet_get();
-  task_stop("wallet_refresh");
 }
 
 void wallet_refresh_async(void) {

@@ -7,6 +7,8 @@
 #include "json.h"
 #include "mqttt.h"
 #include "oled.h"
+#include "screen.h"
+#include "toolbar.h"
 #include "wallet.h"
 
 #define DUCK_WIDTH 16
@@ -33,8 +35,7 @@ typedef struct State {
   Equipment equipment;
 } State;
 
-void pet_display(void);
-void state_stats_display(void);
+void state_display();
 
 void state_init(void);
 State state_get(void);

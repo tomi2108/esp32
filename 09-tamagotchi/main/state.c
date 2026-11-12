@@ -1,4 +1,7 @@
 #include "state.h"
+#include "screen.h"
+#include "toolbar.h"
+#include "wallet.h"
 
 extern MqttClient mqtt_client;
 extern OLED oled;
@@ -84,8 +87,20 @@ void pet_display(void) {
     oled_write_text(&oled, 0, 52, false, "Pet has died");
     return;
   }
-
   oled_draw_bitmap(&oled, 8, 26, DUCK_WIDTH, DUCK_HEIGHT, false, duck_bitmap);
 }
 
+void pet_render(Screen *self) {
+  pet_display();
+  wallet_display(60, 0);
+  toolbar_render();
+  if (!state.is_dead)
+    state_stats_display();
+}
+
+void pet_update(Screen *self) { toolbar_update(); }
+
+Screen pet_screen = {.render = pet_render, .update = pet_update};
+
+void state_display() { screen_push(pet_screen); }
 void state_init(void) { mqtt_sub(mqtt_client, "/state", update_state); }

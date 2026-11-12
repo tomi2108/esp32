@@ -1,4 +1,5 @@
 #include "main_menu.h"
+#include "toolbar.h"
 
 extern PassiveBuzzer buzzer;
 extern int wholenote;
@@ -40,7 +41,7 @@ Menu main_menu = {.buzzer = &buzzer,
                   .length = MAIN_MENU_LENGTH,
                   .options = main_menu_options};
 
-void display_main_menu() {
+void main_menu_render(Screen *self) {
   const uint8_t h = ICON_HEIGHT;
   const uint8_t w = ICON_WIDTH;
   const uint8_t dx = w + 4;
@@ -67,36 +68,33 @@ void display_main_menu() {
   }
 }
 
-void open_main_menu(void) {
-  bool back = false;
+void main_menu_update(Screen *self) {
+  RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
+  RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
 
+  if (click == ROTARY_CLICK_DOUBLE)
+    screen_pop();
+
+  if (direction == ROTARY_CLOCKWISE)
+    menu_next(&main_menu);
+
+  if (direction == ROTARY_COUNTERCLOCKWISE)
+    menu_prev(&main_menu);
+
+  if (click == ROTARY_CLICK_SINGLE && main_menu.current >= 0 &&
+      main_menu.current < MAIN_MENU_LENGTH) {
+    rotary_encoder_wait_for_release(&rotary_encoder);
+    menu_select(&main_menu);
+  }
+}
+
+Screen main_menu_screen = {
+    .render = main_menu_render,
+    .update = main_menu_update,
+};
+
+void open_main_menu(void) {
   main_menu.current = 0;
   main_menu.selected = -1;
-
-  while (!back) {
-    oled_clear(&oled);
-    display_main_menu();
-    RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
-    RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
-
-    if (click == ROTARY_CLICK_DOUBLE) {
-      back = true;
-      continue;
-    }
-
-    if (direction == ROTARY_CLOCKWISE)
-      menu_next(&main_menu);
-
-    if (direction == ROTARY_COUNTERCLOCKWISE)
-      menu_prev(&main_menu);
-
-    if (click == ROTARY_CLICK_SINGLE && main_menu.current >= 0 &&
-        main_menu.current < MAIN_MENU_LENGTH) {
-      rotary_encoder_wait_for_release(&rotary_encoder);
-      menu_select(&main_menu);
-    }
-
-    oled_update(&oled);
-    vTaskDelay(pdMS_TO_TICKS(10));
-  }
+  screen_push(main_menu_screen);
 }

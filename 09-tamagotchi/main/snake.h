@@ -12,6 +12,10 @@
 #include "random.h"
 #include "rotary_encoder.h"
 #include "spinner.h"
+#include "task.h"
+#include "wallet.h"
+#include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 void snake_play();

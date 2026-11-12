@@ -12,6 +12,7 @@
 #include "oled.h"
 #include "response.h"
 #include "rotary_encoder.h"
+#include "screen.h"
 
 #include <inttypes.h>
 #include <stdbool.h>

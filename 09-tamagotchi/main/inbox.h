@@ -11,6 +11,7 @@
 #include "oled.h"
 #include "response.h"
 #include "rotary_encoder.h"
+#include "screen.h"
 #include "task.h"
 
 #define INBOX_SIZE 100

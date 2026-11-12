@@ -34,7 +34,7 @@ Menu toolbar = {.buzzer = &buzzer,
                 .length = TOOLBAR_LENGTH,
                 .options = toolbar_options};
 
-void toolbar_display() {
+void toolbar_render() {
   const uint8_t h = ICON_HEIGHT;
   const uint8_t w = ICON_WIDTH;
   const uint8_t dx = w + 4;
@@ -51,7 +51,9 @@ void toolbar_display() {
     uint8_t x = tb_x + i * dx;
     oled_draw_bitmap(&oled, x, y, w, h, toolbar.current == i, icons[i]);
   }
+};
 
+void toolbar_update() {
   RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
   if (direction == ROTARY_COUNTERCLOCKWISE)
     menu_prev(&toolbar);
@@ -63,4 +65,4 @@ void toolbar_display() {
     rotary_encoder_wait_for_release(&rotary_encoder);
     menu_select(&toolbar);
   }
-};
+}

@@ -1,4 +1,3 @@
-
 #include "client.h"
 
 #include "esp_heap_caps.h"
@@ -6,6 +5,27 @@
 
 #define TAG "HTTP"
 #define HTTP_URL_MAX 256
+
+static void log_body(const char *label, const void *data, size_t size) {
+  if (data == NULL || size == 0) {
+    ESP_LOGI(TAG, "%s: <empty>", label);
+    return;
+  }
+
+  const char *ptr = (const char *)data;
+  const size_t chunk_size = 256;
+
+  ESP_LOGI(TAG, "%s (%u bytes):", label, (unsigned)size);
+
+  for (size_t offset = 0; offset < size; offset += chunk_size) {
+    size_t len = size - offset;
+
+    if (len > chunk_size)
+      len = chunk_size;
+
+    ESP_LOGI(TAG, "%.*s", (int)len, ptr + offset);
+  }
+}
 
 typedef struct {
   Response *response;
@@ -186,18 +206,27 @@ Response *client_send(HttpClient *client, const char *method, const char *url,
            (unsigned long)heap_caps_get_free_size(MALLOC_CAP_8BIT),
            (unsigned long)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
 
-  esp_err_t err = esp_http_client_perform(handle);
+  esp_http_client_perform(handle);
+  ESP_LOGI(TAG, "========== HTTP REQUEST ==========");
+  ESP_LOGI(TAG, "%s %s", method, full_url);
 
-  if (err != ESP_OK) {
-    ESP_LOGE(TAG, "%s %s failed: %s (0x%x)", method, full_url,
-             esp_err_to_name(err), (unsigned int)err);
-    goto cleanup;
+  if (body != NULL && body->stream != NULL) {
+    log_body("REQUEST BODY", body->stream, body->size);
+  } else {
+    ESP_LOGI(TAG, "REQUEST BODY: <empty>");
   }
 
+  ESP_LOGI(TAG, "==================================");
+
+  res->status_code = esp_http_client_get_status_code(handle);
   res->status_code = esp_http_client_get_status_code(handle);
 
-  ESP_LOGI(TAG, "%s %s -> %u, body=%u bytes", method, full_url,
-           (unsigned)res->status_code, (unsigned)res->body->size);
+  ESP_LOGI(TAG, "========== HTTP RESPONSE ==========");
+  ESP_LOGI(TAG, "Status: %u", (unsigned)res->status_code);
+
+  log_body("RESPONSE BODY", res->body->stream, res->body->size);
+
+  ESP_LOGI(TAG, "===================================");
 
   goto done;
 

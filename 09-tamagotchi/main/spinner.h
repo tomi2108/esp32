@@ -1,10 +1,10 @@
 #pragma once
 
-#include "display.h"
+#include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "oled.h"
-#include "task.h"
+#include "overlay.h"
 #include <stdlib.h>
 
 void spinner_start(OLED *oled, int x, int y);
