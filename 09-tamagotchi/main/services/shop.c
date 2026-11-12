@@ -85,7 +85,7 @@ void shop_refresh_async(void) {
   task_start("shop_refresh", shop_refresh_task, NULL);
 }
 
-ShopItem *shop_get_items(void) { return shop; }
+ShopItem *shop_get(void) { return shop; }
 
 int32_t shop_get_size(void) { return shop_size; }
 

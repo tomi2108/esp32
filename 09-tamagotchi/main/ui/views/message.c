@@ -9,7 +9,7 @@ static int selected_message = -1;
 static void render(Screen *self) {
   if (selected_message < 0 || selected_message >= INBOX_SIZE)
     return;
-  Message message = inbox_get(selected_message);
+  Message message = inbox_get_message(selected_message);
   if (message.content[0] != '\0')
     oled_write_text(&oled, 0, 0, false, "%s", message.content);
 }

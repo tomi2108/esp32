@@ -7,7 +7,8 @@ extern HttpClient *http_client;
 
 Message inbox[INBOX_SIZE] = {0};
 
-Message inbox_get(int index) { return inbox[index]; }
+Message inbox_get_message(int index) { return inbox[index]; }
+Message *inbox_get() { return inbox; }
 
 int inbox_count(void) {
   int count = 0;

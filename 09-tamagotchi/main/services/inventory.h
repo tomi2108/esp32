@@ -25,6 +25,6 @@ typedef struct {
 } InventoryItem;
 
 void inventory_refresh_async(void);
-InventoryItem *inventory_get_items(bool equippable);
+InventoryItem *inventory_get(bool equippable);
 int inventory_get_size(bool equippable);
 void inventory_use(bool equippable, int32_t item_id);

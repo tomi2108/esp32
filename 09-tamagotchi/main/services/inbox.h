@@ -18,9 +18,7 @@ typedef struct Message {
 
 int inbox_count(void);
 int inbox_get_unread(void);
-void inbox_remove(int index);
-void inbox_add(Message message);
-void inbox_fetch(void);
 void inbox_read(int index);
 void inbox_init(void);
-Message inbox_get(int index);
+Message inbox_get_message(int index);
+Message *inbox_get();

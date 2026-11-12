@@ -25,7 +25,7 @@ static const OLEDMenuHeader shop_header = {
 };
 
 static void update_options(void) {
-  ShopItem *items = shop_get_items();
+  ShopItem *items = shop_get();
   int32_t size = shop_get_size();
 
   for (int i = 0; i < size; i++) {

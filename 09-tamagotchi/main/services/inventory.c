@@ -87,7 +87,7 @@ static void inventory_remove(InventoryItem items[], int *size, int index) {
   (*size)--;
 }
 
-InventoryItem *inventory_get_items(bool equippable) {
+InventoryItem *inventory_get(bool equippable) {
   InventoryCategory category =
       equippable ? INVENTORY_EQUIPPABLE : INVENTORY_CONSUMABLE;
   return inventory_get_category_items(category);

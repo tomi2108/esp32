@@ -61,7 +61,7 @@ static void update_options(InventoryItem items[], int size) {
 static void render(Screen *self) {
   bool equippable = *(bool *)self->context;
 
-  InventoryItem *items = inventory_get_items(equippable);
+  InventoryItem *items = inventory_get(equippable);
   int size = inventory_get_size(equippable);
 
   const OLEDMenuHeader inventory_header = {
@@ -110,7 +110,7 @@ static void update(Screen *self) {
     int32_t item_id = inventory_menu.options[inventory_menu.current].value;
 
     inventory_use(equippable, item_id);
-    update_options(inventory_get_items(equippable),
+    update_options(inventory_get(equippable),
                    inventory_get_size(equippable));
     inventory_refresh_async();
   }

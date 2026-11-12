@@ -36,8 +36,8 @@ static void render(Screen *self) {
   static Option options[INBOX_SIZE];
   static OLEDMenuItemDecoration decorations[INBOX_SIZE];
   int j = 0;
+  Message *inbox = inbox_get();
   for (int i = 0; i < INBOX_SIZE; i++) {
-    extern Message inbox[INBOX_SIZE];
     if (inbox[i].content[0] == '\0')
       continue;
     options[j] = (Option){
