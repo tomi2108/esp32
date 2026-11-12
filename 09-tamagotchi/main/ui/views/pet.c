@@ -2,39 +2,28 @@
 
 extern OLED oled;
 
-static void pet_display(void) {
+static void render(Screen *self) {
   State state = state_get();
 
   if (strcmp(state.status, "sleeping") == 0 && !state.is_dead)
     oled_write_text(&oled, 8, 18, false, "zzzz");
 
   oled_write_text(&oled, 0, 0, false, "%s", state.name);
+  pet_sprite_render();
 
-  if (state.is_dead) {
-    pet_sprite_display(true);
-    oled_write_text(&oled, 0, 52, false, "Pet has died");
-    return;
-  }
+  if (state.is_dead)
+    return oled_write_text(&oled, 0, 52, false, "Pet has died");
 
-  pet_sprite_display(false);
-}
-
-static void pet_render(Screen *self) {
-  State state = state_get();
-
-  pet_display();
-  wallet_display(60, 0);
+  wallet_render(60, 0);
   toolbar_render();
-
-  if (!state.is_dead)
-    pet_stats_display(state);
+  stats_render();
 }
 
-static void pet_update(Screen *self) { toolbar_update(); }
+static void update(Screen *self) { toolbar_update(); }
 
 static Screen pet_screen = {
-    .render = pet_render,
-    .update = pet_update,
+    .render = render,
+    .update = update,
 };
 
-void state_display(void) { screen_push(pet_screen); }
+void pet_view(void) { screen_push(pet_screen); }

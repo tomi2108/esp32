@@ -7,4 +7,4 @@
 #include "ui/components/wallet.h"
 #include "ui/screen.h"
 
-void state_display(void);
+void pet_view(void);

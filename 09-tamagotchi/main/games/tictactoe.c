@@ -185,7 +185,7 @@ static void game_over_init(GameResult result) {
   score_loaded = false;
 
   if (score_loading) {
-    spinner_start(&oled, 64, 32);
+    spinner_start(64, 32);
     if (task_start("ttt_score", publish_score_task, NULL) != 0) {
       score_loading = false;
       score_loaded = true;

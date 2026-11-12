@@ -8,4 +8,4 @@
 #include <stdint.h>
 #include <stdio.h>
 
-void wallet_display(int x, int y);
+void wallet_render(int x, int y);

@@ -2,7 +2,7 @@
 
 extern OLED oled;
 
-void wallet_display(int x, int y) {
+void wallet_render(int x, int y) {
   uint8_t w = ICON_WIDTH;
   uint8_t h = ICON_HEIGHT;
   Icon wallet_icon = icons_rpg_coin_gold_currency_money_gp();

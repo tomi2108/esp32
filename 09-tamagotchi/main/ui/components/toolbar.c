@@ -20,7 +20,7 @@ void select_toolbar(void *ctx, int32_t value) {
     action_hydrate();
     break;
   case 2:
-    open_main_menu();
+    main_menu_view();
     break;
   default:
     break;

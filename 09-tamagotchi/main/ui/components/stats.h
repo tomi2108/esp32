@@ -6,4 +6,4 @@
 
 #include <stdint.h>
 
-void pet_stats_display(State state);
+void stats_render();

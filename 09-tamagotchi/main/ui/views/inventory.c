@@ -19,7 +19,7 @@ static Menu inventory_menu = {
     .context = NULL,
 };
 
-static void inventory_update_options(InventoryItem items[], int size) {
+static void update_options(InventoryItem items[], int size) {
   if (size > MAX_INVENTORY_SIZE)
     size = MAX_INVENTORY_SIZE;
 
@@ -58,7 +58,7 @@ static void inventory_update_options(InventoryItem items[], int size) {
   }
 }
 
-void inventory_render(Screen *self) {
+static void render(Screen *self) {
   bool equippable = *(bool *)self->context;
 
   InventoryItem *items = inventory_get_items(equippable);
@@ -70,7 +70,7 @@ void inventory_render(Screen *self) {
       .separator = true,
   };
 
-  inventory_update_options(items, size);
+  update_options(items, size);
 
   if (size == 0) {
     oled_write_text(&oled, 0, oled.height / 2 - 3, false, "Inventory empty");
@@ -88,7 +88,7 @@ void inventory_render(Screen *self) {
   oled_display_menu(&oled, &menu_config);
 }
 
-void inventory_update(Screen *self) {
+static void update(Screen *self) {
   bool equippable = *(bool *)self->context;
 
   RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
@@ -110,18 +110,18 @@ void inventory_update(Screen *self) {
     int32_t item_id = inventory_menu.options[inventory_menu.current].value;
 
     inventory_use(equippable, item_id);
-    inventory_update_options(inventory_get_items(equippable),
-                             inventory_get_size(equippable));
+    update_options(inventory_get_items(equippable),
+                   inventory_get_size(equippable));
     inventory_refresh_async();
   }
 }
 
 Screen inventory_screen = {
-    .render = inventory_render,
-    .update = inventory_update,
+    .render = render,
+    .update = update,
 };
 
-void inventory_display(bool equippable) {
+void inventory_view(bool equippable) {
   bool *ctx = malloc(sizeof(bool));
   inventory_screen.context = ctx;
   inventory_menu.current = 0;

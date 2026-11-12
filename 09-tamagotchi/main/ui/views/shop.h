@@ -11,4 +11,4 @@
 #include <inttypes.h>
 #include <stdio.h>
 
-void shop_display(void);
+void shop_view(void);

@@ -63,7 +63,7 @@ void app_main(void) {
   wallet_refresh_async();
   shop_refresh_async();
   inventory_refresh_async();
-  state_display();
+  pet_view();
 
   while (1) {
     oled_clear(&oled);

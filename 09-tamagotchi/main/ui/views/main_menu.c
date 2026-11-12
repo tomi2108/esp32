@@ -11,22 +11,22 @@ Option main_menu_options[MAIN_MENU_LENGTH] = {{.key = "Comida", .value = 0},
                                               {.key = "Tienda", .value = 3},
                                               {.key = "Juegos", .value = 4}};
 
-void select_main_menu(void *ctx, int32_t value) {
+static void on_select(void *ctx, int32_t value) {
   switch (value) {
   case 0:
-    inventory_display(false);
+    inventory_view(false);
     break;
   case 1:
-    inventory_display(true);
+    inventory_view(true);
     break;
   case 2:
-    inbox_display();
+    inbox_view();
     break;
   case 3:
-    shop_display();
+    shop_view();
     break;
   case 4:
-    open_games_menu();
+    games_view();
     break;
   default:
     break;
@@ -36,11 +36,11 @@ void select_main_menu(void *ctx, int32_t value) {
 Menu main_menu = {.buzzer = &buzzer,
                   .current = 0,
                   .selected = -1,
-                  .on_select = select_main_menu,
+                  .on_select = on_select,
                   .length = MAIN_MENU_LENGTH,
                   .options = main_menu_options};
 
-void main_menu_render(Screen *self) {
+static void render(Screen *self) {
   const uint8_t h = ICON_HEIGHT;
   const uint8_t w = ICON_WIDTH;
   const uint8_t dx = w + 4;
@@ -67,7 +67,7 @@ void main_menu_render(Screen *self) {
   }
 }
 
-void main_menu_update(Screen *self) {
+static void update(Screen *self) {
   RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
   RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
 
@@ -88,11 +88,11 @@ void main_menu_update(Screen *self) {
 }
 
 Screen main_menu_screen = {
-    .render = main_menu_render,
-    .update = main_menu_update,
+    .render = render,
+    .update = update,
 };
 
-void open_main_menu(void) {
+void main_menu_view(void) {
   main_menu.current = 0;
   main_menu.selected = -1;
   screen_push(main_menu_screen);

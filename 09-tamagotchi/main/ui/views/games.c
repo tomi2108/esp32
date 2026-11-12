@@ -30,7 +30,7 @@ Menu games_menu = {.buzzer = &buzzer,
                    .length = GAMES_MENU_LENGTH,
                    .options = games_options};
 
-void games_menu_render(Screen *self) {
+static void render(Screen *self) {
   const uint8_t h = ICON_HEIGHT;
   const uint8_t w = ICON_WIDTH;
   const uint8_t dx = w + 4;
@@ -56,7 +56,7 @@ void games_menu_render(Screen *self) {
   }
 }
 
-void games_menu_update(Screen *self) {
+static void update(Screen *self) {
   RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
   RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
   if (click == ROTARY_CLICK_DOUBLE) {
@@ -76,10 +76,9 @@ void games_menu_update(Screen *self) {
   }
 }
 
-Screen games_menu_screen = {.render = games_menu_render,
-                            .update = games_menu_update};
+Screen games_menu_screen = {.render = render, .update = update};
 
-void open_games_menu(void) {
+void games_view(void) {
   games_menu.current = 0;
   games_menu.selected = -1;
   screen_push(games_menu_screen);

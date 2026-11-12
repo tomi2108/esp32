@@ -207,7 +207,7 @@ static void game_over_init(void) {
   earned_coins = 0;
   score_loading = true;
   score_loaded = false;
-  spinner_start(&oled, 64, 32);
+  spinner_start(64, 32);
   if (task_start("snake_score", publish_score_task, NULL) != 0) {
     score_loading = false;
     score_loaded = true;

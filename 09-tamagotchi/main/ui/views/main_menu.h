@@ -12,4 +12,4 @@
 #include "ui/views/shop.h"
 
 #define MAIN_MENU_LENGTH 5
-void open_main_menu(void);
+void main_menu_view(void);

@@ -1,21 +1,21 @@
 #include "spinner.h"
 
+extern OLED oled;
+
 typedef struct {
   int x;
   int y;
-  OLED *oled;
 } Args;
 
 void spinner_render(Overlay *self) {
   Args *args = self->data;
-  oled_draw_spinner(args->oled, args->x, args->y, 10);
+  oled_draw_spinner(&oled, args->x, args->y, 10);
 }
 
 Overlay spinner = {.render = spinner_render};
 
-void spinner_start(OLED *oled, int x, int y) {
+void spinner_start(int x, int y) {
   Args *args = malloc(sizeof(Args));
-  args->oled = oled;
   args->x = x;
   args->y = y;
   spinner.data = args;

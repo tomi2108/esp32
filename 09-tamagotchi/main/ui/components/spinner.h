@@ -7,5 +7,5 @@
 #include "ui/overlay.h"
 #include <stdlib.h>
 
-void spinner_start(OLED *oled, int x, int y);
+void spinner_start(int x, int y);
 void spinner_stop(void);

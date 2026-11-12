@@ -1,8 +1,10 @@
 #include "stats.h"
+#include "services/state.h"
 
 extern OLED oled;
 
-void pet_stats_display(State state) {
+void stats_render() {
+  State state = state_get();
   const uint8_t w = ICON_WIDTH;
   const uint8_t h = ICON_HEIGHT;
   const uint8_t bar_width = 4;

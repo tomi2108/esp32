@@ -11,4 +11,4 @@
 
 #include <stdlib.h>
 
-void inventory_display(bool equippable);
+void inventory_view(bool equippable);

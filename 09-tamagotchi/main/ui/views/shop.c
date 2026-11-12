@@ -24,7 +24,7 @@ static const OLEDMenuHeader shop_header = {
     .separator = true,
 };
 
-static void shop_update_options(void) {
+static void update_options(void) {
   ShopItem *items = shop_get_items();
   int32_t size = shop_get_size();
 
@@ -54,10 +54,10 @@ static void shop_update_options(void) {
     shop_menu.current = size > 0 ? size - 1 : 0;
 }
 
-void display_refresh_time(void) {}
+void refresh_time_render(void) {}
 
-void shop_render(Screen *self) {
-  shop_update_options();
+static void render(Screen *self) {
+  update_options();
 
   const OLEDMenu menu_config = {
       .menu = shop_menu,
@@ -76,11 +76,11 @@ void shop_render(Screen *self) {
   current_menu.menu = shop_menu;
 
   oled_display_menu(&oled, &current_menu);
-  display_refresh_time();
+  refresh_time_render();
   return;
 }
 
-void shop_update(Screen *self) {
+static void update(Screen *self) {
   RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
   RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
 
@@ -102,11 +102,11 @@ void shop_update(Screen *self) {
 }
 
 Screen shop_screen = {
-    .render = shop_render,
-    .update = shop_update,
+    .render = render,
+    .update = update,
 };
 
-void shop_display(void) {
+void shop_view(void) {
   shop_menu.current = 0;
   shop_menu.selected = -1;
   screen_push(shop_screen);

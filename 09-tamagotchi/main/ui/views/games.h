@@ -12,4 +12,4 @@
 
 #define GAMES_MENU_LENGTH 2
 
-void open_games_menu();
+void games_view(void);

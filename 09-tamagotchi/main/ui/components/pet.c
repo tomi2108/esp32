@@ -8,8 +8,9 @@ static const uint8_t duck_bitmap[DUCK_HEIGHT * 2] = {
     0x7F, 0xF8, 0x3F, 0xF0, 0x1F, 0xE0, 0x0C, 0x60, 0x00, 0x00,
 };
 
-void pet_sprite_display(bool is_dead) {
-  if (is_dead) {
+void pet_sprite_render() {
+  State state = state_get();
+  if (state.is_dead) {
     oled_draw_bitmap(&oled, (oled.width - DUCK_WIDTH) / 2,
                      (oled.height - DUCK_HEIGHT) / 2, DUCK_WIDTH, DUCK_HEIGHT,
                      false, duck_bitmap);
