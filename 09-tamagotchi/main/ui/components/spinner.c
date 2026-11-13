@@ -10,9 +10,14 @@ typedef struct {
 
 void spinner_render(Overlay *self) {
   Args *args = self->data;
-  oled_fill_square(&oled, oled.width - 7 / 2, oled.height - 7 / 2, 14, true);
-  oled_fill_square(&oled, oled.width - 6 / 2, oled.height - 6 / 2, 12, false);
-  oled_draw_spinner(&oled, args->x, args->y, 10);
+  int cx = (oled.width / 2);
+  int cy = (oled.height / 2);
+  int border = 1;
+  int inner = 6;
+  int outer = inner + border;
+  oled_fill_square(&oled, cx - outer, cy - outer, outer * 2, true);
+  oled_fill_square(&oled, cx - inner, cy - inner, inner * 2, false);
+  oled_draw_spinner(&oled, args->x, args->y, 8);
 }
 
 Overlay spinner = {.render = spinner_render};

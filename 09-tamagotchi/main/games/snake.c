@@ -65,10 +65,6 @@ static Direction get_prev_direction(Direction curr) {
   return directions[(curr + 3) % 4];
 }
 
-static Direction get_opposite_direction(Direction direction) {
-  return (direction + 2) % 4;
-}
-
 static void generate_new_apple(void) {
   int row;
   int col;
@@ -185,6 +181,8 @@ static int calculate_score(void) {
 static void publish_score_task(void *args) {
   earned_coins = game_publish_score("snake", calculate_score());
   wallet_refresh_async();
+  spinner_stop();
+  overlay_show(&game_over_overlay);
 }
 
 static Option game_over_options[2] = {
@@ -254,11 +252,8 @@ static void game_over_init(void) {
   game_over_menu.current = 0;
   game_over_menu.selected = -1;
   earned_coins = 0;
-  spinner_start(64, 32);
+  spinner_start(oled.width / 2, oled.height / 2);
   task_start("snake_score", publish_score_task, NULL);
-  task_wait_for("snake_score");
-  spinner_stop();
-  overlay_show(&game_over_overlay);
 }
 
 static void game_over_menu_select(void *ctx, int32_t selected) {
@@ -275,19 +270,12 @@ static void snake_update(Screen *self) {
 
   RotaryDirection dir = rotary_encoder_direction(&rotary_encoder);
 
-  Direction next = current_direction;
-
   if (dir == ROTARY_CLOCKWISE)
-    next = get_next_direction(current_direction);
-
-  if (dir == ROTARY_COUNTERCLOCKWISE)
-    next = get_prev_direction(current_direction);
-
-  if (next != get_opposite_direction(current_direction))
-    current_direction = next;
+    current_direction = get_next_direction(current_direction);
+  else if (dir == ROTARY_COUNTERCLOCKWISE)
+    current_direction = get_prev_direction(current_direction);
 
   TickType_t now = xTaskGetTickCount();
-
   if (now - last_move_tick >= pdMS_TO_TICKS(MOVE_INTERVAL_MS)) {
     last_move_tick = now;
 

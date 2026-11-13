@@ -148,6 +148,8 @@ void pc_turn() {
 static void publish_score_task(void *args) {
   earned_coins = game_publish_score("tictactoe", calculate_score());
   wallet_refresh_async();
+  spinner_stop();
+  overlay_show(&game_over_overlay);
 }
 
 static Option game_over_options[2] = {
@@ -172,11 +174,8 @@ static void game_over_init(GameResult result) {
 
   earned_coins = 0;
 
-  spinner_start(64, 32);
+  spinner_start(oled.width / 2, oled.height / 2);
   task_start("ttt_score", publish_score_task, NULL);
-  task_wait_for("ttt_score");
-  spinner_stop();
-  overlay_show(&game_over_overlay);
 }
 
 static void game_over_render(Overlay *self) {

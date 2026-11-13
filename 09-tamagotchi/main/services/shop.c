@@ -12,19 +12,6 @@ const char *ends_at;
 static ShopItem shop[MAX_SHOP_SIZE];
 static int shop_size;
 
-static void shop_buy_item(int32_t item_id) {
-  t_json *body = json_create();
-  json_object_start(body);
-  json_key(body, "itemId");
-  json_int(body, item_id);
-  json_object_end(body);
-
-  headers_add(http_client->headers, "Content-Type", "application/json");
-  client_send_post(http_client, json_buffer(body), "/shop");
-  headers_remove(http_client->headers, "Content-Type");
-  json_destroy(body);
-}
-
 static void decode_item(const t_json_value *body, ShopItem *out) {
   json_value_int(json_object_get(body, "id"), &out->id);
   json_value_int(json_object_get(body, "price"), &out->price);
@@ -89,7 +76,18 @@ static void shop_remove(int index) {
 
 void shop_buy_task(void *args) {
   int32_t item_id = *(int32_t *)args;
-  shop_buy_item(item_id);
+
+  t_json *body = json_create();
+  json_object_start(body);
+  json_key(body, "itemId");
+  json_int(body, item_id);
+  json_object_end(body);
+
+  headers_add(http_client->headers, "Content-Type", "application/json");
+  client_send_post(http_client, json_buffer(body), "/shop");
+  headers_remove(http_client->headers, "Content-Type");
+  json_destroy(body);
+
   shop_refresh_async();
   wallet_refresh_async();
   inventory_refresh_async();

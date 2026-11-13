@@ -1,6 +1,7 @@
 idf_component_register(
     SRCS "main.c"
     "assets/assets.c"
+    "common/dates.c"
     "common/random.c"
     "common/task.c"
     "games/snake.c"
@@ -9,6 +10,7 @@ idf_component_register(
     "services/games.c"
     "services/inbox.c"
     "services/inventory.c"
+    "services/missions.c"
     "services/shop.c"
     "services/state.c"
     "services/wallet.c"
@@ -24,6 +26,7 @@ idf_component_register(
     "ui/views/inventory.c"
     "ui/views/main_menu.c"
     "ui/views/message.c"
+    "ui/views/missions.c"
     "ui/views/pet.c"
     "ui/views/shop.c"
     INCLUDE_DIRS "."
