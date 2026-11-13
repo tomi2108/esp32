@@ -25,5 +25,5 @@ typedef struct ShopItem {
 
 void shop_refresh_async(void);
 ShopItem *shop_get(void);
-int32_t shop_get_size(void);
+int shop_get_size(void);
 void shop_buy(int32_t item_id);

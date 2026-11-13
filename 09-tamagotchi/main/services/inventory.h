@@ -13,7 +13,8 @@
 #include <string.h>
 
 #define MAX_INVENTORY_SIZE 75
-#define INVENTORY_LABEL_SIZE 64
+
+typedef enum { INVENTORY_EQUIPPABLE, INVENTORY_CONSUMABLE } InventoryCategory;
 
 typedef struct {
   int32_t id;
@@ -25,6 +26,6 @@ typedef struct {
 } InventoryItem;
 
 void inventory_refresh_async(void);
-InventoryItem *inventory_get(bool equippable);
-int inventory_get_size(bool equippable);
-void inventory_use(bool equippable, int32_t item_id);
+InventoryItem *inventory_get(InventoryCategory category);
+int inventory_get_size(InventoryCategory category);
+void inventory_use(InventoryCategory category, int32_t item_id);

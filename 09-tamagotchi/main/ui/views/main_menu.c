@@ -14,10 +14,10 @@ Option main_menu_options[MAIN_MENU_LENGTH] = {{.key = "Comida", .value = 0},
 static void on_select(void *ctx, int32_t value) {
   switch (value) {
   case 0:
-    inventory_view(false);
+    inventory_view(INVENTORY_CONSUMABLE);
     break;
   case 1:
-    inventory_view(true);
+    inventory_view(INVENTORY_EQUIPPABLE);
     break;
   case 2:
     inbox_view();

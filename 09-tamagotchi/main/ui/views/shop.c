@@ -1,4 +1,5 @@
 #include "shop.h"
+#include "services/shop.h"
 
 extern PassiveBuzzer buzzer;
 extern OLED oled;
@@ -26,20 +27,20 @@ static const OLEDMenuHeader shop_header = {
 
 static void update_options(void) {
   ShopItem *items = shop_get();
-  int32_t size = shop_get_size();
+  int size = shop_get_size();
 
   for (int i = 0; i < size; i++) {
-    ShopItem *item = &items[i];
+    ShopItem item = items[i];
 
     snprintf(shop_labels[i], sizeof(shop_labels[i]), "%s x%" PRId32,
-             item->name ? item->name : "Item", item->stock);
+             item.name ? item.name : "Item", item.stock);
 
     snprintf(shop_prices[i], sizeof(shop_prices[i]), "%" PRId32,
-             item->price * item->stock);
+             item.price * item.stock);
 
     shop_options[i] = (Option){
         .key = shop_labels[i],
-        .value = item->id,
+        .value = item.id,
     };
 
     shop_decorations[i] = (OLEDMenuItemDecoration){
@@ -81,11 +82,12 @@ static void render(Screen *self) {
 static void update(Screen *self) {
   RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
   RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
+  int size = shop_get_size();
 
   if (click == ROTARY_CLICK_DOUBLE)
     screen_pop();
 
-  if (shop_get_size() == 0)
+  if (size == 0)
     return;
 
   if (direction == ROTARY_CLOCKWISE)
@@ -95,7 +97,7 @@ static void update(Screen *self) {
     menu_prev(&shop_menu);
 
   if (click == ROTARY_CLICK_SINGLE && shop_menu.current >= 0 &&
-      shop_menu.current < shop_get_size()) {
+      shop_menu.current < size) {
     shop_buy(shop_menu.options[shop_menu.current].value);
     update_options();
   }

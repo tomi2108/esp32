@@ -14,7 +14,7 @@
 #include "wifi.h"
 #include <stdint.h>
 
-#define FPS 30
+#define FPS 40
 #define FRAME_INTERVAL pdMS_TO_TICKS(1000 / FPS)
 
 extern const uint8_t certificate[] asm("_binary_mosquitto_ca_crt_start");

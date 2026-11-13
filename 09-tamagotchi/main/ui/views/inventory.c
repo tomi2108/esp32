@@ -1,10 +1,11 @@
 #include "inventory.h"
+#include "services/inventory.h"
 
 extern OLED oled;
 extern PassiveBuzzer buzzer;
 extern RotaryEncoder rotary_encoder;
 
-static char inventory_labels[MAX_INVENTORY_SIZE][INVENTORY_LABEL_SIZE];
+static char inventory_labels[MAX_INVENTORY_SIZE][64];
 static char inventory_quantities[MAX_INVENTORY_SIZE][12];
 
 static Option inventory_options[MAX_INVENTORY_SIZE];
@@ -19,25 +20,26 @@ static Menu inventory_menu = {
     .context = NULL,
 };
 
-static void update_options(bool equippable) {
-  InventoryItem *items = inventory_get(equippable);
-  int size = inventory_get_size(equippable);
+static void update_options(InventoryCategory category) {
+  InventoryItem *items = inventory_get(category);
+  int size = inventory_get_size(category);
+
   for (int i = 0; i < size; i++) {
-    InventoryItem *item = &items[i];
+    InventoryItem item = items[i];
 
     snprintf(inventory_labels[i], sizeof(inventory_labels[i]), "%s",
-             item->name ? item->name : "Item");
+             item.name ? item.name : "Item");
 
     snprintf(inventory_quantities[i], sizeof(inventory_quantities[i]),
-             "x%" PRId32, item->quantity);
+             "x%" PRId32, item.quantity);
 
     inventory_options[i] = (Option){
         .key = inventory_labels[i],
-        .value = item->id,
+        .value = item.id,
     };
 
     inventory_decorations[i] = (OLEDMenuItemDecoration){
-        .bitmap = get_item_bitmap(item->code),
+        .bitmap = get_item_bitmap(item.code),
         .label = inventory_quantities[i],
     };
   }
@@ -58,15 +60,15 @@ static void update_options(bool equippable) {
 }
 
 static void render(Screen *self) {
-  bool equippable = *(bool *)self->context;
+  InventoryCategory category = *(InventoryCategory *)self->context;
 
   const OLEDMenuHeader inventory_header = {
-      .title = equippable ? "Ropita" : "Comida",
+      .title = category == INVENTORY_EQUIPPABLE ? "Ropita" : "Comida",
       .inverted = true,
       .separator = true,
   };
 
-  if (inventory_get_size(equippable) == 0) {
+  if (inventory_get_size(category) == 0) {
     oled_write_text(&oled, 0, oled.height / 2 - 3, false, "Inventory empty");
     return;
   }
@@ -83,14 +85,15 @@ static void render(Screen *self) {
 }
 
 static void update(Screen *self) {
-  bool equippable = *(bool *)self->context;
+  InventoryCategory category = *(InventoryCategory *)self->context;
 
   RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
   RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
-  int size = inventory_get_size(equippable);
+  int size = inventory_get_size(category);
 
   if (click == ROTARY_CLICK_DOUBLE) {
     screen_pop();
+    return;
   }
 
   if (size == 0)
@@ -105,8 +108,8 @@ static void update(Screen *self) {
   if (click == ROTARY_CLICK_SINGLE && inventory_menu.current >= 0 &&
       inventory_menu.current < size) {
     int32_t item_id = inventory_menu.options[inventory_menu.current].value;
-    inventory_use(equippable, item_id);
-    update_options(equippable);
+    inventory_use(category, item_id);
+    update_options(category);
   }
 }
 
@@ -115,10 +118,10 @@ Screen inventory_screen = {
     .update = update,
 };
 
-void inventory_view(bool equippable) {
-  update_options(equippable);
-  bool *ctx = malloc(sizeof(bool));
-  *ctx = equippable;
+void inventory_view(InventoryCategory category) {
+  update_options(category);
+  InventoryCategory *ctx = malloc(sizeof(InventoryCategory));
+  *ctx = category;
   inventory_screen.context = ctx;
   inventory_menu.current = 0;
   inventory_menu.selected = -1;
