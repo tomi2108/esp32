@@ -1,4 +1,6 @@
 #include "snake.h"
+#include "common/task.h"
+#include "ui/components/spinner.h"
 
 #define CELL_SIZE 4
 #define ROWS (64 / CELL_SIZE)
@@ -39,8 +41,6 @@ static SnakeState snake_state;
 
 static TickType_t last_move_tick;
 
-static volatile bool score_loading;
-static volatile bool score_loaded;
 static volatile int32_t earned_coins;
 
 static const Direction directions[4] = {UP, RIGHT, DOWN, LEFT};
@@ -180,8 +180,6 @@ static int calculate_score(void) {
 static void publish_score_task(void *args) {
   earned_coins = game_publish_score("snake", calculate_score());
   wallet_refresh_async();
-  score_loading = false;
-  score_loaded = true;
 }
 
 static Option game_over_options[2] = {
@@ -200,24 +198,7 @@ static Menu game_over_menu = {
     .options = game_over_options,
 };
 
-static void game_over_init(void) {
-  snake_state = SNAKE_GAME_OVER;
-  game_over_menu.current = 0;
-  game_over_menu.selected = -1;
-  earned_coins = 0;
-  score_loading = true;
-  score_loaded = false;
-  spinner_start(64, 32);
-  if (task_start("snake_score", publish_score_task, NULL) != 0) {
-    score_loading = false;
-    score_loaded = true;
-  }
-}
-
 static void game_over_render(Overlay *self) {
-  if (score_loading || score_loaded)
-    return;
-
   Modal modal = {
       .menu = &game_over_menu,
       .height = 60,
@@ -248,15 +229,6 @@ static void game_over_render(Overlay *self) {
 }
 
 static void game_over_update(Overlay *self) {
-  if (score_loading)
-    return;
-
-  if (score_loaded) {
-    spinner_stop();
-    score_loaded = false;
-    return;
-  }
-
   RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
   RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
 
@@ -276,6 +248,18 @@ static Overlay game_over_overlay = {
     .render = game_over_render,
     .update = game_over_update,
 };
+
+static void game_over_init(void) {
+  snake_state = SNAKE_GAME_OVER;
+  game_over_menu.current = 0;
+  game_over_menu.selected = -1;
+  earned_coins = 0;
+  spinner_start(64, 32);
+  task_start("snake_score", publish_score_task, NULL);
+  task_wait_for("snake_score");
+  spinner_stop();
+  overlay_show(&game_over_overlay);
+}
 
 static void game_over_menu_select(void *ctx, int32_t selected) {
   overlay_remove(&game_over_overlay);
@@ -307,10 +291,9 @@ static void snake_update(Screen *self) {
   if (now - last_move_tick >= pdMS_TO_TICKS(MOVE_INTERVAL_MS)) {
     last_move_tick = now;
 
-    if (move()) {
+    bool lost = move();
+    if (lost)
       game_over_init();
-      overlay_show(&game_over_overlay);
-    }
   }
 }
 

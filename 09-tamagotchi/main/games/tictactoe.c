@@ -1,4 +1,6 @@
 #include "tictactoe.h"
+#include "common/task.h"
+#include "ui/components/spinner.h"
 
 #define CELL_SIZE 20
 #define PADDING_X 34
@@ -27,8 +29,6 @@ static int cursor_row;
 static int cursor_col;
 static TTTState game_state;
 
-static volatile bool score_loading;
-static volatile bool score_loaded;
 static volatile int32_t earned_coins;
 
 static GameResult final_result;
@@ -156,8 +156,6 @@ void pc_turn() {
 static void publish_score_task(void *args) {
   earned_coins = game_publish_score("tictactoe", calculate_score());
   wallet_refresh_async();
-  score_loading = false;
-  score_loaded = true;
 }
 
 static Option game_over_options[2] = {
@@ -181,23 +179,15 @@ static void game_over_init(GameResult result) {
   game_over_menu.selected = -1;
 
   earned_coins = 0;
-  score_loading = result == GAME_PLAYER_WON;
-  score_loaded = false;
 
-  if (score_loading) {
-    spinner_start(64, 32);
-    if (task_start("ttt_score", publish_score_task, NULL) != 0) {
-      score_loading = false;
-      score_loaded = true;
-    }
-  }
+  spinner_start(64, 32);
+  task_start("ttt_score", publish_score_task, NULL);
+  task_wait_for("ttt_score");
+  spinner_stop();
   overlay_show(&game_over_overlay);
 }
 
 static void game_over_render(Overlay *self) {
-  if (score_loading || score_loaded)
-    return;
-
   Modal modal = {
       .menu = &game_over_menu,
       .height = 60,
@@ -240,14 +230,6 @@ static void game_over_render(Overlay *self) {
 }
 
 static void game_over_update(Overlay *self) {
-  if (score_loading)
-    return;
-  if (score_loaded) {
-    spinner_stop();
-    score_loaded = false;
-    return;
-  }
-
   RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
   RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
 
@@ -314,14 +296,12 @@ static void ttt_update(Screen *self) {
       return;
     player_turn();
     GameResult result = check_end();
-    if (result != GAME_ONGOING) {
-      game_over_init(result);
-      return;
-    }
+    if (result != GAME_ONGOING)
+      return game_over_init(result);
     pc_turn();
     result = check_end();
     if (result != GAME_ONGOING)
-      game_over_init(result);
+      return game_over_init(result);
   }
 }
 
