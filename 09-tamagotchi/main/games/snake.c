@@ -1,6 +1,4 @@
 #include "snake.h"
-#include "common/task.h"
-#include "ui/components/spinner.h"
 
 #define CELL_SIZE 4
 #define ROWS (64 / CELL_SIZE)
@@ -44,6 +42,13 @@ static TickType_t last_move_tick;
 static volatile int32_t earned_coins;
 
 static const Direction directions[4] = {UP, RIGHT, DOWN, LEFT};
+static void game_over_render(Overlay *self);
+static void game_over_update(Overlay *self);
+
+static Overlay game_over_overlay = {
+    .render = game_over_render,
+    .update = game_over_update,
+};
 
 static int get_tail_index(void) {
   return (head_index - snake_length + MAX_SNAKE_LENGTH) % MAX_SNAKE_LENGTH;
@@ -244,11 +249,6 @@ static void game_over_update(Overlay *self) {
     menu_prev(&game_over_menu);
 }
 
-static Overlay game_over_overlay = {
-    .render = game_over_render,
-    .update = game_over_update,
-};
-
 static void game_over_init(void) {
   snake_state = SNAKE_GAME_OVER;
   game_over_menu.current = 0;
@@ -298,11 +298,9 @@ static void snake_update(Screen *self) {
 }
 
 static void snake_render(Screen *self) {
-  for (int row = 0; row < ROWS; row++) {
-    for (int col = 0; col < COLS; col++) {
+  for (int row = 0; row < ROWS; row++)
+    for (int col = 0; col < COLS; col++)
       draw_cell(row, col);
-    }
-  }
 }
 
 static Screen snake_screen = {

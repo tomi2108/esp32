@@ -1,6 +1,4 @@
 #include "tictactoe.h"
-#include "common/task.h"
-#include "ui/components/spinner.h"
 
 #define CELL_SIZE 20
 #define PADDING_X 34
@@ -42,6 +40,9 @@ static Overlay game_over_overlay = {
     .update = game_over_update,
 };
 
+int col_to_x(int col) { return PADDING_X + col * CELL_SIZE; }
+int row_to_y(int row) { return PADDING_Y + row * CELL_SIZE; }
+
 static void restart(void) {
   memset(board, NONE, sizeof(board));
   cursor_row = 0;
@@ -49,64 +50,58 @@ static void restart(void) {
   game_state = TTT_PLAYING;
 }
 
-static void draw_player_one(int row, int col, bool on) {
-  int x = PADDING_X + col * CELL_SIZE;
-  int y = PADDING_Y + row * CELL_SIZE;
+static void draw_player_one(int x, int y, bool on) {
   int padding = 5;
   oled_draw_line(&oled, x + padding, y + padding, x + CELL_SIZE - padding,
                  y + CELL_SIZE - padding, on);
-
   oled_draw_line(&oled, x + CELL_SIZE - padding, y + padding, x + padding,
                  y + CELL_SIZE - padding, on);
 }
 
-static void draw_player_two(int row, int col, bool on) {
-  int x = PADDING_X + col * CELL_SIZE;
-  int y = PADDING_Y + row * CELL_SIZE;
+static void draw_player_two(int x, int y, bool on) {
   oled_draw_circle(&oled, x + CELL_SIZE / 2, y + CELL_SIZE / 2, 5, 7, on);
 }
 
-static void draw_cell(int row, int col) {
+static void draw_cell(int row, int col, bool on) {
+  int x = col_to_x(col);
+  int y = row_to_y(row);
   switch (board[row][col]) {
   case NONE:
     break;
 
   case PLAYER_1:
-    draw_player_one(row, col, true);
+    draw_player_one(x, y, on);
     break;
 
   case PLAYER_PC:
-    draw_player_two(row, col, true);
+    draw_player_two(x, y, on);
     break;
   }
 }
 
 static void draw_board(void) {
-  for (int i = 1; i < 3; i++) {
-    int y = PADDING_Y + CELL_SIZE * i;
+  for (int row = 1; row < 3; row++) {
+    int y = row_to_y(row);
     oled_draw_line(&oled, PADDING_X, y, PADDING_X + CELL_SIZE * 3, y, true);
   }
 
-  for (int i = 1; i < 3; i++) {
-    int x = PADDING_X + CELL_SIZE * i;
+  for (int col = 1; col < 3; col++) {
+    int x = col_to_x(col);
     oled_draw_line(&oled, x, PADDING_Y, x, PADDING_Y + CELL_SIZE * 3, true);
   }
 
-  for (int row = 0; row < 3; row++) {
-    for (int col = 0; col < 3; col++) {
-      draw_cell(row, col);
-    }
-  }
+  for (int row = 0; row < 3; row++)
+    for (int col = 0; col < 3; col++)
+      draw_cell(row, col, true);
 }
 
 static int calculate_score(void) {
   int pieces = 0;
-  for (int row = 0; row < 3; row++) {
-    for (int col = 0; col < 3; col++) {
+  for (int row = 0; row < 3; row++)
+    for (int col = 0; col < 3; col++)
       if (board[row][col] != NONE)
         pieces++;
-    }
-  }
+
   int score = 1000 - ((pieces - 5) * 200);
   if (score < 0)
     score = 0;
@@ -126,17 +121,14 @@ static GameResult check_end(void) {
   for (int i = 0; i < 8; i++) {
     CellValue value = board[wins[i][0][0]][wins[i][0][1]];
     if (value != NONE && value == board[wins[i][1][0]][wins[i][1][1]] &&
-        value == board[wins[i][2][0]][wins[i][2][1]]) {
+        value == board[wins[i][2][0]][wins[i][2][1]])
       return value == PLAYER_1 ? GAME_PLAYER_WON : GAME_PC_WON;
-    }
   }
 
-  for (int row = 0; row < 3; row++) {
-    for (int col = 0; col < 3; col++) {
+  for (int row = 0; row < 3; row++)
+    for (int col = 0; col < 3; col++)
       if (board[row][col] == NONE)
         return GAME_ONGOING;
-    }
-  }
 
   return GAME_DRAW;
 }
@@ -308,13 +300,11 @@ static void ttt_update(Screen *self) {
 static void ttt_render(Screen *self) {
   draw_board();
 
-  int x = PADDING_X + 1 + cursor_col * CELL_SIZE;
-  int y = PADDING_Y + 1 + cursor_row * CELL_SIZE;
-
-  oled_fill_square(&oled, x, y, CELL_SIZE - 2, true);
-
+  int x = col_to_x(cursor_col) + 2;
+  int y = row_to_y(cursor_row) + 2;
+  oled_fill_square(&oled, x, y, CELL_SIZE - 4, true);
   if (board[cursor_row][cursor_col] != NONE)
-    draw_cell(cursor_row, cursor_col);
+    draw_cell(cursor_row, cursor_col, false);
 }
 
 static Screen ttt_screen = {
