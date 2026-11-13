@@ -129,6 +129,5 @@ void inventory_use(bool equippable, int32_t item_id) {
       inventory_remove(items, size, index);
     }
   }
-
   inventory_refresh_async();
 }

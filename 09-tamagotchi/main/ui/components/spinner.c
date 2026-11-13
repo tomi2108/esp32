@@ -1,4 +1,5 @@
 #include "spinner.h"
+#include "oled.h"
 
 extern OLED oled;
 
@@ -9,6 +10,8 @@ typedef struct {
 
 void spinner_render(Overlay *self) {
   Args *args = self->data;
+  oled_fill_square(&oled, oled.width - 7 / 2, oled.height - 7 / 2, 14, true);
+  oled_fill_square(&oled, oled.width - 6 / 2, oled.height - 6 / 2, 12, false);
   oled_draw_spinner(&oled, args->x, args->y, 10);
 }
 

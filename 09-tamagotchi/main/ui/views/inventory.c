@@ -19,10 +19,9 @@ static Menu inventory_menu = {
     .context = NULL,
 };
 
-static void update_options(InventoryItem items[], int size) {
-  if (size > MAX_INVENTORY_SIZE)
-    size = MAX_INVENTORY_SIZE;
-
+static void update_options(bool equippable) {
+  InventoryItem *items = inventory_get(equippable);
+  int size = inventory_get_size(equippable);
   for (int i = 0; i < size; i++) {
     InventoryItem *item = &items[i];
 
@@ -61,18 +60,13 @@ static void update_options(InventoryItem items[], int size) {
 static void render(Screen *self) {
   bool equippable = *(bool *)self->context;
 
-  InventoryItem *items = inventory_get(equippable);
-  int size = inventory_get_size(equippable);
-
   const OLEDMenuHeader inventory_header = {
       .title = equippable ? "Ropita" : "Comida",
       .inverted = true,
       .separator = true,
   };
 
-  update_options(items, size);
-
-  if (size == 0) {
+  if (inventory_get_size(equippable) == 0) {
     oled_write_text(&oled, 0, oled.height / 2 - 3, false, "Inventory empty");
     return;
   }
@@ -99,6 +93,9 @@ static void update(Screen *self) {
     screen_pop();
   }
 
+  if (size == 0)
+    return;
+
   if (direction == ROTARY_CLOCKWISE)
     menu_next(&inventory_menu);
 
@@ -108,11 +105,8 @@ static void update(Screen *self) {
   if (click == ROTARY_CLICK_SINGLE && inventory_menu.current >= 0 &&
       inventory_menu.current < size) {
     int32_t item_id = inventory_menu.options[inventory_menu.current].value;
-
     inventory_use(equippable, item_id);
-    update_options(inventory_get(equippable),
-                   inventory_get_size(equippable));
-    inventory_refresh_async();
+    update_options(equippable);
   }
 }
 
@@ -122,7 +116,9 @@ Screen inventory_screen = {
 };
 
 void inventory_view(bool equippable) {
+  update_options(equippable);
   bool *ctx = malloc(sizeof(bool));
+  *ctx = equippable;
   inventory_screen.context = ctx;
   inventory_menu.current = 0;
   inventory_menu.selected = -1;

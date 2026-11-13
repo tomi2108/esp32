@@ -1,6 +1,13 @@
 #pragma once
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
 #include "freertos/idf_additions.h"
+#include "freertos/semphr.h"
+#include "freertos/task.h"
+
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -18,8 +25,11 @@ typedef struct {
   TaskStatus status;
   void *args;
   TaskHandler handler;
+  uint32_t waiters;
 } Task;
 
 void task_manager_init(void);
 int task_start(const char *id, TaskHandler handler, void *args);
 int task_stop(const char *id);
+bool task_is_finished(const char *id);
+void task_wait_for(const char *id);

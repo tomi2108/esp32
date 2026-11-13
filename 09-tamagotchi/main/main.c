@@ -14,6 +14,9 @@
 #include "wifi.h"
 #include <stdint.h>
 
+#define FPS 30
+#define FRAME_INTERVAL pdMS_TO_TICKS(1000 / FPS)
+
 extern const uint8_t certificate[] asm("_binary_mosquitto_ca_crt_start");
 
 PassiveBuzzer buzzer;
@@ -65,19 +68,18 @@ void app_main(void) {
   inventory_refresh_async();
   pet_view();
 
+  TickType_t last_wake_time = xTaskGetTickCount();
+
   while (1) {
     oled_clear(&oled);
     Screen *screen = screen_current();
     if (screen->update)
       screen->update(screen);
-
     overlay_update();
-
     if (screen->render)
       screen->render(screen);
     overlay_render();
-
     oled_update(&oled);
-    vTaskDelay(pdMS_TO_TICKS(10));
-  };
-};
+    vTaskDelayUntil(&last_wake_time, FRAME_INTERVAL);
+  }
+}

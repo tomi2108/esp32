@@ -1,4 +1,5 @@
 #include "shop.h"
+#include "services/inventory.h"
 
 extern HttpClient *http_client;
 
@@ -9,16 +10,11 @@ static void shop_buy_item(int32_t item_id) {
   json_int(body, item_id);
   json_object_end(body);
 
-  Headers headers = headers_create();
-  headers_add(headers, "Content-Type", "application/json");
-  http_client->headers = headers;
+  headers_add(http_client->headers, "Content-Type", "application/json");
   client_send_post(http_client, json_buffer(body), "/shop");
-  headers_destroy(headers);
+  headers_remove(http_client->headers, "Content-Type");
   json_destroy(body);
 }
-#include "shop.h"
-
-extern HttpClient *http_client;
 
 const char *starts_at;
 const char *ends_at;
@@ -30,7 +26,6 @@ static void decode_item(const t_json_value *body, ShopItem *out) {
   json_value_int(json_object_get(body, "id"), &out->id);
   json_value_int(json_object_get(body, "price"), &out->price);
   json_value_int(json_object_get(body, "stock"), &out->stock);
-
   out->name = json_value_string(json_object_get(body, "name"));
   out->type = json_value_string(json_object_get(body, "type"));
   out->slot = json_value_string(json_object_get(body, "slot"));
@@ -86,11 +81,11 @@ void shop_refresh_async(void) {
 }
 
 ShopItem *shop_get(void) { return shop; }
-
 int32_t shop_get_size(void) { return shop_size; }
 
 void shop_buy(int32_t item_id) {
   shop_buy_item(item_id);
   shop_refresh_async();
   wallet_refresh_async();
+  inventory_refresh_async();
 }

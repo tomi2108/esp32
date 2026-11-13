@@ -57,8 +57,6 @@ static void update_options(void) {
 void refresh_time_render(void) {}
 
 static void render(Screen *self) {
-  update_options();
-
   const OLEDMenu menu_config = {
       .menu = shop_menu,
       .header = &shop_header,
@@ -97,8 +95,10 @@ static void update(Screen *self) {
     menu_prev(&shop_menu);
 
   if (click == ROTARY_CLICK_SINGLE && shop_menu.current >= 0 &&
-      shop_menu.current < shop_get_size())
+      shop_menu.current < shop_get_size()) {
     shop_buy(shop_menu.options[shop_menu.current].value);
+    update_options();
+  }
 }
 
 Screen shop_screen = {
@@ -107,6 +107,7 @@ Screen shop_screen = {
 };
 
 void shop_view(void) {
+  update_options();
   shop_menu.current = 0;
   shop_menu.selected = -1;
   screen_push(shop_screen);
