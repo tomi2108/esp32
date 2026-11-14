@@ -20,14 +20,14 @@ typedef enum { MISSIONS_AUTOMATIC, MISSIONS_MANUAL } MissionType;
 
 typedef struct {
   int32_t id;
-  char *code;
-  char *title;
-  char *description;
-  char *type;
+  const char *code;
+  const char *title;
+  const char *description;
+  const char *type;
   int32_t target;
   int32_t progress;
   int32_t reward_coins;
-  char *completed_at;
+  const char *completed_at;
 } Mission;
 
 void missions_refresh_async(void);

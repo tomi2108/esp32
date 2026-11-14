@@ -1,4 +1,5 @@
 #include "missions.h"
+#include "json.h"
 
 extern HttpClient *http_client;
 
@@ -18,7 +19,17 @@ int missions_get_size(MissionType type) {
   return type == MISSIONS_AUTOMATIC ? automatic_size : manual_size;
 }
 
-static void decode_mission_item(const t_json_value *body, Mission *out) {}
+static void decode_mission_item(const t_json_value *body, Mission *out) {
+  json_value_int(json_object_get(body, "id"), &out->id);
+  json_value_int(json_object_get(body, "target"), &out->target);
+  json_value_int(json_object_get(body, "progress"), &out->progress);
+  json_value_int(json_object_get(body, "reward_coins"), &out->reward_coins);
+  out->code = json_value_string(json_object_get(body, "code"));
+  out->title = json_value_string(json_object_get(body, "title"));
+  out->description = json_value_string(json_object_get(body, "description"));
+  out->type = json_value_string(json_object_get(body, "type"));
+  out->completed_at = json_value_string(json_object_get(body, "completed_at"));
+}
 
 static void missions_refresh_task(void *arg) {
   Response *res = client_send_get(http_client, "/inventory");
@@ -65,20 +76,6 @@ static int missions_find(MissionType type, int32_t mission_id) {
   }
 
   return -1;
-}
-
-static void missions_remove(MissionType type, int index) {
-  Mission *missions = missions_get(type);
-  int size = missions_get_size(type);
-  if (index < 0 || index >= size)
-    return;
-
-  for (int i = index; i < size - 1; i++)
-    missions[i] = missions[i + 1];
-  if (type == MISSIONS_AUTOMATIC)
-    automatic_size--;
-  if (type == MISSIONS_MANUAL)
-    manual_size--;
 }
 
 void mission_complete_task(void *args) {
