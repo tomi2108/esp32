@@ -19,6 +19,7 @@ typedef struct Equipment {
 typedef struct State {
   char name[32];
   char status[16];
+  char species[16];
   double energy;
   double hunger;
   double hydration;

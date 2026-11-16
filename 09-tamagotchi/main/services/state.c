@@ -22,11 +22,15 @@ void update_state(MqttClient client, MqttMessage message) {
 
   const char *status = json_value_string(json_object_get(new_state, "status"));
   const char *name = json_value_string(json_object_get(new_state, "name"));
+  const char *species =
+      json_value_string(json_object_get(new_state, "species"));
 
   snprintf(state.status, sizeof(state.status), "%s",
            status != NULL ? status : "idle");
   snprintf(state.name, sizeof(state.name), "%s",
            name != NULL ? name : "Anonymous");
+  snprintf(state.species, sizeof(state.species), "%s",
+           species != NULL ? species : "cat");
 
   json_value_destroy(new_state);
   mqtt_destroy_message(message);

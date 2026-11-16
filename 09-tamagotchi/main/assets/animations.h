@@ -3,4 +3,5 @@
 #include "animation.h"
 #include <string.h>
 
-Animation *animations_cat_idle();
+Animation *animations_idle(char *species);
+Animation *animations_sleep(char *species);
