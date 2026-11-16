@@ -16,10 +16,21 @@ typedef struct Equipment {
   int32_t accessory;
 } Equipment;
 
+typedef enum {
+  PET_IDLE,
+  PET_SLEEPING,
+} PetStatus;
+
+typedef enum {
+  PET_CAT,
+  PET_DOG,
+  PET_RABBIT,
+} PetSpecies;
+
 typedef struct State {
   char name[32];
-  char status[16];
-  char species[16];
+  PetStatus status;
+  PetSpecies species;
   double energy;
   double hunger;
   double hydration;

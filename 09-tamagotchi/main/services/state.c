@@ -1,8 +1,28 @@
 #include "state.h"
+#include <string.h>
 
 static State state;
 
 extern MqttClient mqtt_client;
+
+PetSpecies pet_species(const char *species) {
+  if (strcmp(species, "cat") == 0)
+    return PET_CAT;
+  if (strcmp(species, "dog") == 0)
+    return PET_DOG;
+  if (strcmp(species, "rabbit") == 0)
+    return PET_RABBIT;
+
+  return PET_CAT;
+}
+
+PetStatus pet_status(const char *status) {
+  if (strcmp(status, "idle") == 0)
+    return PET_IDLE;
+  if (strcmp(status, "sleeping") == 0)
+    return PET_SLEEPING;
+  return PET_IDLE;
+}
 
 void update_state(MqttClient client, MqttMessage message) {
   t_json_value *new_state = json_parse_buffer(message.buffer);
@@ -25,12 +45,11 @@ void update_state(MqttClient client, MqttMessage message) {
   const char *species =
       json_value_string(json_object_get(new_state, "species"));
 
-  snprintf(state.status, sizeof(state.status), "%s",
-           status != NULL ? status : "idle");
+  state.status = pet_status(status);
+  state.species = pet_species(species);
+
   snprintf(state.name, sizeof(state.name), "%s",
            name != NULL ? name : "Anonymous");
-  snprintf(state.species, sizeof(state.species), "%s",
-           species != NULL ? species : "cat");
 
   json_value_destroy(new_state);
   mqtt_destroy_message(message);

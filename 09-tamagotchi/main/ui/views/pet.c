@@ -5,9 +5,6 @@ extern OLED oled;
 static void render(Screen *self) {
   State state = state_get();
 
-  if (strcmp(state.status, "sleeping") == 0 && !state.is_dead)
-    oled_write_text(&oled, 8, 18, false, "zzzz");
-
   oled_write_text(&oled, 0, 0, false, "%s", state.name);
   pet_sprite_render();
 
