@@ -1,4 +1,4 @@
-#include "assets.h"
+#include "images.h"
 
 typedef Icon (*IconGetter)(void);
 

@@ -1,6 +1,7 @@
 idf_component_register(
     SRCS "main.c"
-    "assets/assets.c"
+    "assets/images.c"
+    "assets/animations.c"
     "common/dates.c"
     "common/random.c"
     "common/task.c"
@@ -31,5 +32,5 @@ idf_component_register(
     "ui/views/shop.c"
     INCLUDE_DIRS "."
     EMBED_TXTFILES "mosquitto_ca.crt"
-    REQUIRES oled buzzer mqttt wifi rotary_encoder http json icons
+    REQUIRES oled buzzer mqttt wifi rotary_encoder http json icons modal animation
 )

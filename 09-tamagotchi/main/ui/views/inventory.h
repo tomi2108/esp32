@@ -1,6 +1,6 @@
 #pragma once
 
-#include "assets/assets.h"
+#include "assets/images.h"
 #include "buzzer.h"
 #include "icons.h"
 #include "menu.h"
