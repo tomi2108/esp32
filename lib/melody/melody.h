@@ -39,11 +39,13 @@ typedef enum Duration {
   HALF = 2,
   QUARTER = 4,
   EIGHTH = 8,
+  SIXTEENTH = 16,
 
   D_WHOLE = -1,
   D_HALF = -2,
   D_QUARTER = -4,
   D_EIGHTH = -8,
+  D_SIXTEENTH = -16,
 } Duration;
 
 typedef struct Note {

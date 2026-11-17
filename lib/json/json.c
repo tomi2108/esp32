@@ -45,8 +45,6 @@ typedef struct {
   unsigned int depth;
 } t_json_parser;
 
-/* Writer */
-
 static int json_add(t_json *json, const char *data, size_t size) {
   if (json == NULL || json->buffer == NULL || data == NULL)
     return -1;
@@ -308,8 +306,6 @@ t_buffer *json_buffer(t_json *json) {
   return json != NULL ? json->buffer : NULL;
 }
 
-/* Reader: value allocation and destruction */
-
 static t_json_value *json_value_create(t_json_type type) {
   t_json_value *value = calloc(1, sizeof(*value));
 
@@ -393,8 +389,6 @@ static int json_object_append(t_json_value *object, char *key,
   member->value = item;
   return 0;
 }
-
-/* Reader: parser helpers */
 
 static char json_peek(const t_json_parser *parser) {
   return parser->input[parser->position];
@@ -516,8 +510,6 @@ static int json_append_utf8(char **buffer, size_t *length, size_t *capacity,
   return -1;
 }
 
-/* Reader: JSON strings */
-
 static char *json_parse_string_raw(t_json_parser *parser) {
   if (!json_consume(parser, '"'))
     return NULL;
@@ -626,8 +618,6 @@ error:
   return NULL;
 }
 
-/* Reader: objects and arrays */
-
 static t_json_value *json_parse_value(t_json_parser *parser);
 
 static t_json_value *json_parse_object(t_json_parser *parser) {
@@ -731,8 +721,6 @@ error:
   json_value_destroy(array);
   return NULL;
 }
-
-/* Reader: numbers and literals */
 
 static t_json_value *json_parse_number(t_json_parser *parser) {
   const char *start = parser->input + parser->position;
@@ -918,7 +906,6 @@ static t_json_value *json_parse_value(t_json_parser *parser) {
   return NULL;
 }
 
-/* Reader: public parsing functions */
 t_json_value *json_parse(const char *input) {
   if (input == NULL)
     return NULL;
@@ -979,8 +966,6 @@ t_json_value *json_parse_buffer(t_buffer *buffer) {
   free(input);
   return value;
 }
-
-/* Reader: public accessors */
 
 t_json_type json_value_type(const t_json_value *value) {
   return value != NULL ? value->type : JSON_TYPE_NULL;
