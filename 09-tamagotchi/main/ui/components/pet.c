@@ -1,5 +1,8 @@
 #include "pet.h"
+#include "font.h"
+#include "oled.h"
 #include "portmacro.h"
+#include <string.h>
 
 #define PHRASES 36
 #define HUNGRY_PHRASES 12
@@ -101,7 +104,32 @@ static const char *phrases[PHRASES] = {
 
 static void talking_render(Overlay *self) {
   char *phrase = (char *)self->data;
-  oled_write_text(&oled, 30, 20, false, phrase);
+  int border = 2;
+  int padding = 4;
+  int x = 30;
+  int y = 10;
+
+  int max_width = oled.width - x - 2 * (padding + border);
+  int text_width = font_get_width(oled.font, phrase);
+  int lines = (text_width + max_width - 1) / max_width;
+  if (lines < 1)
+    lines = 1;
+  int w = text_width > max_width ? max_width : text_width;
+  int h = lines * oled.font.line_height;
+
+  int inner_x = x - padding;
+  int inner_y = y - padding;
+  int inner_w = w + 2 * padding;
+  int inner_h = h + 2 * padding;
+
+  int outer_x = inner_x - border;
+  int outer_y = inner_y - border;
+  int outer_w = inner_w + 2 * border;
+  int outer_h = inner_h + 2 * border;
+
+  oled_fill_rectangle(&oled, outer_x, outer_y, outer_w, outer_h, true);
+  oled_fill_rectangle(&oled, inner_x, inner_y, inner_w, inner_h, false);
+  oled_write_text(&oled, x, y, false, phrase);
 }
 
 Overlay talking_overlay = {.render = talking_render};
