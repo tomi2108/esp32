@@ -27,7 +27,7 @@ static void select_message(void *context, int32_t index) {
 static void render(Screen *self) {
   int count = inbox_count();
   if (count == 0) {
-    oled_write_text(&oled, 0, oled.height / 2 - 3, false, "Inbox empty");
+    oled_write_text(&oled, 0, oled.height / 2 - 3, false, "No hay mensajitos");
     return;
   }
 

@@ -12,6 +12,6 @@
 #include "ui/views/inventory.h"
 #include "ui/views/shop.h"
 
-#define MAIN_MENU_LENGTH 5
+#define MAIN_MENU_LENGTH 6
 
 void main_menu_view(void);

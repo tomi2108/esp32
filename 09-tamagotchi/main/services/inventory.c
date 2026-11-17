@@ -8,12 +8,32 @@ static int equippables_size = 0;
 static InventoryItem consumables[MAX_INVENTORY_SIZE];
 static int consumables_size = 0;
 
+static InventoryItem seeds[MAX_INVENTORY_SIZE];
+static int seeds_size = 0;
+
 InventoryItem *inventory_get(InventoryCategory category) {
-  return category == INVENTORY_EQUIPPABLE ? equippables : consumables;
-}
+  switch (category) {
+  case INVENTORY_EQUIPPABLE:
+    return equippables;
+  case INVENTORY_CONSUMABLE:
+    return consumables;
+  case INVENTORY_SEEDS:
+    return seeds;
+  };
+
+  return NULL;
+};
 
 int inventory_get_size(InventoryCategory category) {
-  return category == INVENTORY_EQUIPPABLE ? equippables_size : consumables_size;
+  switch (category) {
+  case INVENTORY_EQUIPPABLE:
+    return equippables_size;
+  case INVENTORY_CONSUMABLE:
+    return consumables_size;
+  case INVENTORY_SEEDS:
+    return seeds_size;
+  }
+  return 0;
 }
 
 static void decode_inventory_item(const t_json_value *body,
@@ -51,6 +71,9 @@ static void inventory_refresh_task(void *arg) {
     } else if (strcmp(item.type, "consumable") == 0) {
       if (consumables_size < MAX_INVENTORY_SIZE)
         consumables[consumables_size++] = item;
+    } else if (strcmp(item.type, "seed") == 0) {
+      if (seeds_size < MAX_INVENTORY_SIZE)
+        seeds[seeds_size++] = item;
     }
   }
   return;
@@ -84,9 +107,14 @@ static void inventory_remove(InventoryCategory category, int index) {
     equippables_size--;
   if (category == INVENTORY_CONSUMABLE)
     consumables_size--;
+  if (category == INVENTORY_SEEDS)
+    seeds_size--;
 }
 
 void inventory_use(InventoryCategory category, int32_t item_id) {
+  if (category == INVENTORY_SEEDS)
+    return;
+
   InventoryItem *items = inventory_get(category);
   int index = inventory_find(category, item_id);
 
@@ -98,7 +126,7 @@ void inventory_use(InventoryCategory category, int32_t item_id) {
   if (category == INVENTORY_EQUIPPABLE) {
     action_equip(item_id);
     inventory_remove(category, index);
-  } else {
+  } else if (category == INVENTORY_CONSUMABLE) {
     action_consume(item_id);
     item->quantity--;
     if (item->quantity <= 0)

@@ -61,15 +61,27 @@ static void update_options(InventoryCategory category) {
 
 static void render(Screen *self) {
   InventoryCategory category = *(InventoryCategory *)self->context;
+  char *title = "";
+  switch (category) {
+  case INVENTORY_EQUIPPABLE:
+    title = "Ropita";
+    break;
+  case INVENTORY_CONSUMABLE:
+    title = "Comida";
+    break;
+  case INVENTORY_SEEDS:
+    title = "Semillas";
+    break;
+  }
 
   const OLEDMenuHeader inventory_header = {
-      .title = category == INVENTORY_EQUIPPABLE ? "Ropita" : "Comida",
+      .title = title,
       .inverted = true,
       .separator = true,
   };
 
   if (inventory_get_size(category) == 0) {
-    oled_write_text(&oled, 0, oled.height / 2 - 3, false, "Inventory empty");
+    oled_write_text(&oled, 0, oled.height / 2 - 3, false, "No hay %s", title);
     return;
   }
 

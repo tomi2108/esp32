@@ -67,7 +67,7 @@ static void render(Screen *self) {
   };
 
   if (shop_get_size() == 0) {
-    oled_write_text(&oled, 0, oled.height / 2 - 3, false, "Shop empty");
+    oled_write_text(&oled, 0, oled.height / 2 - 3, false, "Tienda vacia");
     return;
   }
 

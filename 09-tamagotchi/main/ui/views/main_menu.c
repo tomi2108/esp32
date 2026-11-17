@@ -1,15 +1,15 @@
 #include "main_menu.h"
+#include "services/inventory.h"
 
 extern PassiveBuzzer buzzer;
 extern int wholenote;
 extern OLED oled;
 extern RotaryEncoder rotary_encoder;
 
-Option main_menu_options[MAIN_MENU_LENGTH] = {{.key = "Comida", .value = 0},
-                                              {.key = "Ropita", .value = 1},
-                                              {.key = "Mensajitos", .value = 2},
-                                              {.key = "Tienda", .value = 3},
-                                              {.key = "Juegos", .value = 4}};
+Option main_menu_options[MAIN_MENU_LENGTH] = {
+    {.key = "Comida", .value = 0},   {.key = "Ropita", .value = 1},
+    {.key = "Semillas", .value = 2}, {.key = "Mensajitos", .value = 3},
+    {.key = "Tienda", .value = 4},   {.key = "Juegos", .value = 5}};
 
 static void on_select(void *ctx, int32_t value) {
   switch (value) {
@@ -20,12 +20,15 @@ static void on_select(void *ctx, int32_t value) {
     inventory_view(INVENTORY_EQUIPPABLE);
     break;
   case 2:
-    inbox_view();
+    inventory_view(INVENTORY_SEEDS);
     break;
   case 3:
-    shop_view();
+    inbox_view();
     break;
   case 4:
+    shop_view();
+    break;
+  case 5:
     games_view();
     break;
   default:
@@ -51,9 +54,11 @@ static void render(Screen *self) {
 
   Icon icons[MAIN_MENU_LENGTH] = {
       icons_food_restaurant_eating_utensils_fork_knife(),
+      icons_tools_crafting_farming_plant_crop(),
       icons_hats_sunglasses(),
       icons_software_email_mailbox_unread_new_messages(),
-      icons_software_shopping_cart(), icons_controller_gamepad()};
+      icons_software_shopping_cart(),
+      icons_controller_gamepad()};
 
   oled_write_text(&oled, 0, 0, false, "%s",
                   main_menu_options[main_menu.current].key);

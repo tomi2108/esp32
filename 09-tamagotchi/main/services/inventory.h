@@ -14,7 +14,11 @@
 
 #define MAX_INVENTORY_SIZE 75
 
-typedef enum { INVENTORY_EQUIPPABLE, INVENTORY_CONSUMABLE } InventoryCategory;
+typedef enum {
+  INVENTORY_EQUIPPABLE,
+  INVENTORY_CONSUMABLE,
+  INVENTORY_SEEDS,
+} InventoryCategory;
 
 typedef struct {
   int32_t id;
