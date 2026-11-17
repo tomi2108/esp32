@@ -45,7 +45,8 @@ static void render(Screen *self) {
   Mission mission = missions[index];
 
   oled_write_text(&oled, 0, 0, false, "%s", mission.title);
-  oled_write_text(&oled, 0, 8, false, "%s", mission.description);
+  oled_write_text(&oled, 0, oled.font.line_height * 2, false, "%s",
+                  mission.description);
 
   if (ctx.type == MISSIONS_MANUAL) {
     oled_write_text(&oled, 0, oled.height - 8, mission_menu.current == 0, "%s",
