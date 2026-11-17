@@ -6,6 +6,7 @@
 #include "json.h"
 #include "response.h"
 #include "services/actions.h"
+#include "services/wallet.h"
 
 #include <inttypes.h>
 #include <stdbool.h>

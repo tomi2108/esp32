@@ -1,5 +1,6 @@
 #include "mission.h"
 #include "services/missions.h"
+#include "ui/screen.h"
 #include <stdint.h>
 
 extern PassiveBuzzer buzzer;
@@ -20,10 +21,11 @@ static void select_option(void *ctx, int32_t option) {
   case 0:
     missions_complete(id);
     break;
-  case 1:
-    screen_pop();
+  default:
     break;
   }
+  screen_pop();
+  screen_pop();
 }
 
 static Menu mission_menu = {

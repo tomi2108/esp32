@@ -58,6 +58,8 @@ static void update_options(void) {
 void refresh_time_render(void) {}
 
 static void render(Screen *self) {
+  int size = shop_get_size();
+
   const OLEDMenu menu_config = {
       .menu = shop_menu,
       .header = &shop_header,
@@ -66,10 +68,9 @@ static void render(Screen *self) {
       .bitmap_height = 16,
   };
 
-  if (shop_get_size() == 0) {
-    oled_write_text(&oled, 0, oled.height / 2 - 3, false, "Tienda vacia");
-    return;
-  }
+  if (size == 0)
+    return oled_write_text(&oled, 0, oled.height / 2 - 3, false,
+                           "Tienda vacia");
 
   OLEDMenu current_menu = menu_config;
   current_menu.menu = shop_menu;

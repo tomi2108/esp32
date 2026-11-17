@@ -352,3 +352,18 @@ uint32_t font_decode_next(const char **text) {
   *text += 1;
   return '?';
 }
+
+uint16_t font_get_width(Font font, const char *text) {
+  uint16_t width = 0;
+
+  while (*text) {
+    uint32_t codepoint = font_decode_next(&text);
+    const FontGlyph *glyph = font_get_glyph(font, codepoint);
+
+    if (glyph) {
+      width += glyph->advance;
+    }
+  }
+
+  return width;
+}

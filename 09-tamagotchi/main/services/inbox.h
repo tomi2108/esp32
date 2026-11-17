@@ -16,7 +16,7 @@ typedef struct Message {
   bool is_read;
 } Message;
 
-int inbox_count(void);
+int inbox_size(void);
 int inbox_get_unread(void);
 void inbox_read(int index);
 void inbox_init(void);

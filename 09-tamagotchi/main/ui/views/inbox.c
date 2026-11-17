@@ -25,14 +25,13 @@ static void select_message(void *context, int32_t index) {
 }
 
 static void render(Screen *self) {
-  int count = inbox_count();
-  if (count == 0) {
-    oled_write_text(&oled, 0, oled.height / 2 - 3, false, "No hay mensajitos");
-    return;
-  }
+  int size = inbox_size();
+  if (size == 0)
+    return oled_write_text(&oled, 0, oled.height / 2 - 3, false,
+                           "No hay mensajitos");
 
-  if (inbox_menu.current >= count)
-    inbox_menu.current = count - 1;
+  if (inbox_menu.current >= size)
+    inbox_menu.current = size - 1;
   static Option options[INBOX_SIZE];
   static OLEDMenuItemDecoration decorations[INBOX_SIZE];
   int j = 0;
@@ -72,13 +71,13 @@ static void render(Screen *self) {
 static void update(Screen *self) {
   RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
   RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
-  int count = inbox_count();
+  int size = inbox_size();
   if (click == ROTARY_CLICK_DOUBLE) {
     screen_pop();
     return;
   }
 
-  if (count == 0)
+  if (size == 0)
     return;
 
   if (direction == ROTARY_CLOCKWISE)

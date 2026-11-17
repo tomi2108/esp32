@@ -63,6 +63,8 @@ static void update_options(InventoryCategory category) {
 
 static void render(Screen *self) {
   InventoryCategory category = *(InventoryCategory *)self->context;
+  int size = inventory_get_size(category);
+
   char *title = "";
   switch (category) {
   case INVENTORY_EQUIPPABLE:
@@ -82,10 +84,9 @@ static void render(Screen *self) {
       .separator = true,
   };
 
-  if (inventory_get_size(category) == 0) {
-    oled_write_text(&oled, 0, oled.height / 2 - 3, false, "No hay %s", title);
-    return;
-  }
+  if (size == 0)
+    return oled_write_text(&oled, 0, oled.height / 2 - 3, false, "No hay %s",
+                           title);
 
   OLEDMenu menu_config = {
       .menu = inventory_menu,

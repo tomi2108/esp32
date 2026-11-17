@@ -22,62 +22,74 @@ static Menu missions_menu = {
 static void update_options(MissionType type) {
   Mission *missions = missions_get(type);
   int size = missions_get_size(type);
+  int count = 0;
 
   for (int i = 0; i < size; i++) {
     Mission mission = missions[i];
 
-    snprintf(missions_labels[i], sizeof(missions_labels[i]), "%s",
+    if (mission.completed_at != NULL)
+      continue;
+
+    snprintf(missions_labels[count], sizeof(missions_labels[count]), "%s",
              mission.title ? mission.title : "mission");
 
-    snprintf(missions_reward[i], sizeof(missions_reward[i]), "%" PRId32,
-             mission.reward_coins * mission.reward_coins);
+    snprintf(missions_reward[count], sizeof(missions_reward[count]), "%" PRId32,
+             mission.reward_coins);
 
-    missions_options[i] = (Option){
-        .key = missions_labels[i],
+    missions_options[count] = (Option){
+        .key = missions_labels[count],
         .value = mission.id,
     };
 
-    missions_decorations[i] = (OLEDMenuItemDecoration){
+    missions_decorations[count] = (OLEDMenuItemDecoration){
         .bitmap = icons_rpg_coin_gold_currency_money_gp(),
-        .label = missions_reward[i],
+        .label = missions_reward[count],
     };
+
+    count++;
   }
 
-  missions_menu.length = size;
+  missions_menu.length = count;
 
-  if (missions_menu.current >= size)
-    missions_menu.current = size > 0 ? size - 1 : 0;
+  if (missions_menu.current >= count)
+    missions_menu.current = count > 0 ? count - 1 : 0;
 }
 
 void reset_time_render(void) {}
 
 static void render(Screen *self) {
   MissionType type = *(MissionType *)self->context;
-  int size = missions_get_size(type);
+  int size = missions_menu.length;
 
-  const OLEDMenuHeader shop_header = {
-      .title = type == MISSIONS_MANUAL ? "Tareas" : "Misiones",
+  char *title = "";
+  switch (type) {
+  case MISSIONS_MANUAL:
+    title = "Tareas";
+    break;
+  case MISSIONS_AUTOMATIC:
+    title = "Misiones";
+    break;
+  }
+
+  const OLEDMenuHeader missions_header = {
+      .title = title,
       .inverted = true,
       .separator = true,
   };
 
   const OLEDMenu menu_config = {
       .menu = missions_menu,
-      .header = &shop_header,
+      .header = &missions_header,
       .decorations = missions_decorations,
       .bitmap_width = 16,
       .bitmap_height = 16,
   };
 
-  if (size == 0) {
-    oled_write_text(&oled, 0, oled.height / 2 - 3, false, "Missions empty");
-    return;
-  }
+  if (size == 0)
+    return oled_write_text(&oled, 0, oled.height / 2 - 3, false, "No hay %s",
+                           title);
 
-  OLEDMenu current_menu = menu_config;
-  current_menu.menu = missions_menu;
-
-  oled_display_menu(&oled, &current_menu);
+  oled_display_menu(&oled, &menu_config);
   reset_time_render();
   return;
 }
@@ -86,7 +98,7 @@ static void update(Screen *self) {
   MissionType type = *(MissionType *)self->context;
   RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
   RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
-  int size = missions_get_size(type);
+  int size = missions_menu.length;
 
   if (click == ROTARY_CLICK_DOUBLE)
     screen_pop();

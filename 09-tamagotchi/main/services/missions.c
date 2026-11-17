@@ -1,6 +1,5 @@
 #include "missions.h"
-#include "json.h"
-#include <stdint.h>
+#include "response.h"
 
 extern HttpClient *http_client;
 
@@ -32,12 +31,20 @@ static void decode_mission_item(const t_json_value *body, Mission *out) {
   out->completed_at = json_value_string(json_object_get(body, "completed_at"));
 }
 
+static t_json_value *missions_body;
 static void missions_refresh_task(void *arg) {
   Response *res = client_send_get(http_client, "/missions");
   if (res == NULL || res->body == NULL)
     return;
 
   t_json_value *body = json_parse_buffer(res->body);
+
+  if (missions_body)
+    json_value_destroy(missions_body);
+  missions_body = body;
+
+  response_destroy(res);
+
   if (body == NULL)
     return;
 
@@ -91,7 +98,7 @@ void mission_complete_task(void *args) {
   client_send_post(http_client, json_buffer(body), "/missions/complete");
   headers_remove(http_client->headers, "Content-Type");
   json_destroy(body);
-  free(args);
+  wallet_refresh_async();
   missions_refresh_async();
 }
 

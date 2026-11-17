@@ -10,12 +10,12 @@ Message inbox[INBOX_SIZE] = {0};
 Message inbox_get_message(int index) { return inbox[index]; }
 Message *inbox_get() { return inbox; }
 
-int inbox_count(void) {
-  int count = 0;
+int inbox_size(void) {
+  int size = 0;
   for (int i = 0; i < INBOX_SIZE; i++)
     if (inbox[i].content[0] != '\0')
-      count++;
-  return count;
+      size++;
+  return size;
 }
 
 int inbox_get_unread(void) {
@@ -70,10 +70,10 @@ void inbox_fetch(void) {
     return;
   }
   memset(inbox, 0, sizeof(inbox));
-  int count = json_array_size(inbox_res);
-  if (count > INBOX_SIZE)
-    count = INBOX_SIZE;
-  for (int i = 0; i < count; i++) {
+  int size = json_array_size(inbox_res);
+  if (size > INBOX_SIZE)
+    size = INBOX_SIZE;
+  for (int i = 0; i < size; i++) {
     const t_json_value *message = json_array_get(inbox_res, i);
     if (message != NULL)
       decode_message(message, &inbox[i]);

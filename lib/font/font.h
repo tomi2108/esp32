@@ -23,5 +23,5 @@ typedef struct Font {
 Font font_default(void);
 const FontGlyph *font_get_glyph(Font font, uint32_t codepoint);
 uint32_t font_decode_next(const char **text);
-
+uint16_t font_get_width(Font font, const char *text);
 #endif
