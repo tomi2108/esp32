@@ -1,8 +1,5 @@
 #include "client.h"
 
-#include "esp_heap_caps.h"
-#include "freertos/semphr.h"
-
 #define TAG "HTTP"
 #define HTTP_URL_MAX 256
 
@@ -78,14 +75,31 @@ HttpClient *client_create(const char *baseUrl) {
   if (client->headers == NULL || client->mutex == NULL) {
     if (client->headers != NULL)
       headers_destroy(client->headers);
+
     if (client->mutex != NULL)
       vSemaphoreDelete(client->mutex);
+
     free(client);
     return NULL;
   }
 
-  headers_add(client->headers, "Connection", "close");
   headers_add(client->headers, "Accept-Encoding", "identity");
+
+  esp_http_client_config_t config = {
+      .url = baseUrl,
+      .event_handler = http_event_handler,
+      .crt_bundle_attach = esp_crt_bundle_attach,
+      .timeout_ms = 15000,
+  };
+
+  client->handle = esp_http_client_init(&config);
+
+  if (client->handle == NULL) {
+    headers_destroy(client->headers);
+    vSemaphoreDelete(client->mutex);
+    free(client);
+    return NULL;
+  }
 
   return client;
 }
@@ -93,6 +107,9 @@ HttpClient *client_create(const char *baseUrl) {
 void client_destroy(HttpClient *client) {
   if (client == NULL)
     return;
+
+  if (client->handle != NULL)
+    esp_http_client_cleanup(client->handle);
 
   if (client->headers != NULL)
     headers_destroy(client->headers);
@@ -131,7 +148,7 @@ Response *client_send(HttpClient *client, const char *method, const char *url,
     return NULL;
 
   Response *res = NULL;
-  esp_http_client_handle_t handle = NULL;
+  esp_http_client_handle_t handle = client->handle;
   char full_url[HTTP_URL_MAX];
 
   int written;
@@ -153,6 +170,7 @@ Response *client_send(HttpClient *client, const char *method, const char *url,
   }
 
   res = response_create();
+
   if (res == NULL) {
     ESP_LOGE(TAG, "Failed to allocate response");
     goto cleanup;
@@ -163,27 +181,23 @@ Response *client_send(HttpClient *client, const char *method, const char *url,
       .max_body_size = 16384,
   };
 
-  esp_http_client_config_t config = {
-      .url = full_url,
-      .method = get_method(method),
-      .event_handler = http_event_handler,
-      .user_data = &ctx,
-      .crt_bundle_attach = esp_crt_bundle_attach,
-      .timeout_ms = 15000,
-  };
+  esp_err_t err = esp_http_client_set_url(handle, full_url);
 
-  handle = esp_http_client_init(&config);
-  if (handle == NULL) {
-    ESP_LOGE(TAG, "Failed to initialize HTTP client");
+  if (err != ESP_OK)
     goto cleanup;
-  }
+
+  err = esp_http_client_set_method(handle, get_method(method));
+
+  if (err != ESP_OK)
+    goto cleanup;
+
+  esp_http_client_set_user_data(handle, &ctx);
 
   for (size_t i = 0; i < list_size(client->headers); i++) {
     Header *header = list_get(client->headers, i);
 
     if (header != NULL && header->key != NULL && header->value != NULL) {
-      esp_err_t err =
-          esp_http_client_set_header(handle, header->key, header->value);
+      err = esp_http_client_set_header(handle, header->key, header->value);
 
       if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to set HTTP header: %s", header->key);
@@ -193,13 +207,13 @@ Response *client_send(HttpClient *client, const char *method, const char *url,
   }
 
   if (body != NULL && body->stream != NULL && body->size > 0) {
-    esp_err_t err = esp_http_client_set_post_field(
-        handle, (const char *)body->stream, (int)body->size);
+    err = esp_http_client_set_post_field(handle, (const char *)body->stream,
+                                         (int)body->size);
 
-    if (err != ESP_OK) {
-      ESP_LOGE(TAG, "Failed to set HTTP request body");
+    if (err != ESP_OK)
       goto cleanup;
-    }
+  } else {
+    esp_http_client_set_post_field(handle, NULL, 0);
   }
 
   ESP_LOGI(TAG, "%s %s; free heap=%lu, largest block=%lu", method, full_url,
@@ -207,6 +221,7 @@ Response *client_send(HttpClient *client, const char *method, const char *url,
            (unsigned long)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
 
   esp_http_client_perform(handle);
+
   ESP_LOGI(TAG, "========== HTTP REQUEST ==========");
   ESP_LOGI(TAG, "%s %s", method, full_url);
 
@@ -218,7 +233,6 @@ Response *client_send(HttpClient *client, const char *method, const char *url,
 
   ESP_LOGI(TAG, "==================================");
 
-  res->status_code = esp_http_client_get_status_code(handle);
   res->status_code = esp_http_client_get_status_code(handle);
 
   ESP_LOGI(TAG, "========== HTTP RESPONSE ==========");
@@ -237,9 +251,6 @@ cleanup:
   }
 
 done:
-  if (handle != NULL)
-    esp_http_client_cleanup(handle);
-
   xSemaphoreGive(client->mutex);
   return res;
 }

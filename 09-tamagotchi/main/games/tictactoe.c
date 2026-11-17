@@ -147,7 +147,6 @@ void pc_turn() {
 
 static void publish_score_task(void *args) {
   earned_coins = game_publish_score("tictactoe", calculate_score());
-  wallet_refresh_async();
   spinner_stop();
   overlay_show(&game_over_overlay);
 }

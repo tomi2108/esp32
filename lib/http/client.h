@@ -3,8 +3,11 @@
 
 #include "buffer.h"
 #include "esp_crt_bundle.h"
+#include "esp_heap_caps.h"
 #include "esp_http_client.h"
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 #include "list.h"
 #include "protocol.h"
 #include "request.h"
@@ -15,13 +18,11 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/semphr.h"
-
 typedef struct HttpClient {
   Headers headers;
   const char *baseUrl;
   SemaphoreHandle_t mutex;
+  esp_http_client_handle_t handle;
 } HttpClient;
 
 void client_destroy(HttpClient *client);

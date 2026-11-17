@@ -25,5 +25,6 @@ int32_t game_publish_score(char *game_code, int32_t score) {
   t_json_value *res_body = json_parse_buffer(res->body);
   int32_t coins = 0;
   json_value_int(json_object_get(res_body, "coins"), &coins);
+  wallet_refresh_async();
   return coins;
 }
