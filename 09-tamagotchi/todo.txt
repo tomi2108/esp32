@@ -1,5 +1,5 @@
 x 2026-11-07 2026-11-03 Display de monedas actuales en la tienda
-2026-11-03 Assets para las mascotas, dependiendo el tipo
+x 2026-11-16 2026-11-03 Assets para las mascotas, dependiendo el tipo
 x 2026-11-07 2026-11-03 Separar inventario de comida y guardarropas
 x 2026-11-16 2026-11-07 Arreglar compra
 x 2026-11-16 2026-11-07 Menu misiones
