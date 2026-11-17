@@ -33,6 +33,7 @@ idf_component_register(
     "ui/views/inventory.c"
     "ui/views/main_menu.c"
     "ui/views/message.c"
+    "ui/views/mission.c"
     "ui/views/missions.c"
     "ui/views/pet.c"
     "ui/views/shop.c"

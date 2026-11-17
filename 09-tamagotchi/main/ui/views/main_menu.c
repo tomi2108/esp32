@@ -9,7 +9,9 @@ Option main_menu_options[MAIN_MENU_LENGTH] = {
     {.key = "Comida", .value = 0},   {.key = "Ropita", .value = 1},
     {.key = "Semillas", .value = 2}, {.key = "Mensajitos", .value = 3},
     {.key = "Tienda", .value = 4},   {.key = "Duchita", .value = 5},
-    {.key = "Juegos", .value = 6}};
+    {.key = "Juegos", .value = 6},   {.key = "Misiones", .value = 7},
+    {.key = "Tareas", .value = 8},
+};
 
 static void on_select(void *ctx, int32_t value) {
   switch (value) {
@@ -35,6 +37,12 @@ static void on_select(void *ctx, int32_t value) {
   }
   case 6:
     games_view();
+    break;
+  case 7:
+    missions_view(MISSIONS_MANUAL);
+    break;
+  case 8:
+    missions_view(MISSIONS_AUTOMATIC);
     break;
   default:
     break;
@@ -64,7 +72,9 @@ static void render(Screen *self) {
       icons_software_email_mailbox_unread_new_messages(),
       icons_software_shopping_cart(),
       icons_cosmetics_bath_shower_1(),
-      icons_controller_gamepad()};
+      icons_controller_gamepad(),
+      icons_map_markers_building_treasure_pot_of_gold_luck(),
+      icons_map_markers_flagpole()};
 
   oled_write_text(&oled, 0, 0, false, "%s",
                   main_menu_options[main_menu.current].key);

@@ -6,6 +6,7 @@
 #include "rotary_encoder.h"
 #include "services/inbox.h"
 #include "services/inventory.h"
+#include "services/missions.h"
 #include "services/shop.h"
 #include "services/state.h"
 #include "services/wallet.h"
@@ -66,6 +67,7 @@ void app_main(void) {
   wallet_refresh_async();
   shop_refresh_async();
   inventory_refresh_async();
+  missions_refresh_async();
   pet_view();
 
   TickType_t last_wake_time = xTaskGetTickCount();

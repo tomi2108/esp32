@@ -34,3 +34,4 @@ void missions_refresh_async(void);
 Mission *missions_get(MissionType type);
 int missions_get_size(MissionType type);
 void missions_complete(int32_t mission_id);
+int missions_find(MissionType type, int32_t mission_id);

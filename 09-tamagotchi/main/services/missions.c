@@ -1,5 +1,6 @@
 #include "missions.h"
 #include "json.h"
+#include <stdint.h>
 
 extern HttpClient *http_client;
 
@@ -32,7 +33,7 @@ static void decode_mission_item(const t_json_value *body, Mission *out) {
 }
 
 static void missions_refresh_task(void *arg) {
-  Response *res = client_send_get(http_client, "/inventory");
+  Response *res = client_send_get(http_client, "/missions");
   if (res == NULL || res->body == NULL)
     return;
 
@@ -66,7 +67,7 @@ void missions_refresh_async(void) {
   task_start("mission_refresh", missions_refresh_task, NULL);
 }
 
-static int missions_find(MissionType type, int32_t mission_id) {
+int missions_find(MissionType type, int32_t mission_id) {
   Mission *missions = missions_get(type);
   int size = missions_get_size(type);
 

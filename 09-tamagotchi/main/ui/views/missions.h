@@ -5,10 +5,11 @@
 #include "menu.h"
 #include "oled.h"
 #include "rotary_encoder.h"
-#include "services/shop.h"
+#include "services/missions.h"
 #include "ui/screen.h"
+#include "ui/views/mission.h"
 
 #include <inttypes.h>
 #include <stdio.h>
 
-void missions_menu(MissionType type);
+void missions_view(MissionType type);
