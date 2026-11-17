@@ -30,17 +30,19 @@ static void update_options(InventoryCategory category) {
     snprintf(inventory_labels[i], sizeof(inventory_labels[i]), "%s",
              item.name ? item.name : "Item");
 
-    snprintf(inventory_quantities[i], sizeof(inventory_quantities[i]),
-             "x%" PRId32, item.quantity);
+    if (category != INVENTORY_EQUIPPABLE) {
+      snprintf(inventory_quantities[i], sizeof(inventory_quantities[i]),
+               "x%" PRId32, item.quantity);
+      inventory_decorations[i] = (OLEDMenuItemDecoration){
+          .bitmap = get_item_bitmap(item.code),
+          .label = inventory_quantities[i],
+      };
+    } else
+      inventory_decorations[i] = (OLEDMenuItemDecoration){0};
 
     inventory_options[i] = (Option){
         .key = inventory_labels[i],
         .value = item.id,
-    };
-
-    inventory_decorations[i] = (OLEDMenuItemDecoration){
-        .bitmap = get_item_bitmap(item.code),
-        .label = inventory_quantities[i],
     };
   }
 

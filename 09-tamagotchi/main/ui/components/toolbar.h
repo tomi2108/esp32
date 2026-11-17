@@ -6,6 +6,7 @@
 #include "oled.h"
 #include "rotary_encoder.h"
 #include "services/actions.h"
+#include "services/state.h"
 #include "ui/overlay.h"
 #include "ui/views/main_menu.h"
 #include "ui/views/shop.h"

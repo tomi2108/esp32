@@ -1,5 +1,4 @@
 #include "main_menu.h"
-#include "services/inventory.h"
 
 extern PassiveBuzzer buzzer;
 extern int wholenote;
@@ -9,7 +8,8 @@ extern RotaryEncoder rotary_encoder;
 Option main_menu_options[MAIN_MENU_LENGTH] = {
     {.key = "Comida", .value = 0},   {.key = "Ropita", .value = 1},
     {.key = "Semillas", .value = 2}, {.key = "Mensajitos", .value = 3},
-    {.key = "Tienda", .value = 4},   {.key = "Juegos", .value = 5}};
+    {.key = "Tienda", .value = 4},   {.key = "Duchita", .value = 5},
+    {.key = "Juegos", .value = 6}};
 
 static void on_select(void *ctx, int32_t value) {
   switch (value) {
@@ -28,7 +28,12 @@ static void on_select(void *ctx, int32_t value) {
   case 4:
     shop_view();
     break;
-  case 5:
+  case 5: {
+    action_shower();
+    screen_pop();
+    break;
+  }
+  case 6:
     games_view();
     break;
   default:
@@ -54,10 +59,11 @@ static void render(Screen *self) {
 
   Icon icons[MAIN_MENU_LENGTH] = {
       icons_food_restaurant_eating_utensils_fork_knife(),
-      icons_tools_crafting_farming_plant_crop(),
       icons_hats_sunglasses(),
+      icons_tools_crafting_farming_plant_crop(),
       icons_software_email_mailbox_unread_new_messages(),
       icons_software_shopping_cart(),
+      icons_cosmetics_bath_shower_1(),
       icons_controller_gamepad()};
 
   oled_write_text(&oled, 0, 0, false, "%s",

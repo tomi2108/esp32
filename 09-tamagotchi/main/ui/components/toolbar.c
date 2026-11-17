@@ -12,13 +12,19 @@ Option toolbar_options[TOOLBAR_LENGTH] = {
 };
 
 void select_toolbar(void *ctx, int32_t value) {
+  State state = state_get();
   switch (value) {
   case 0:
-    action_sleep();
+    if (state.status != PET_SLEEPING)
+      action_sleep();
+    else
+      action_wakeup();
     break;
-  case 1:
-    action_hydrate();
+  case 1: {
+    if (state.status != PET_SLEEPING)
+      action_hydrate();
     break;
+  }
   case 2:
     main_menu_view();
     break;
