@@ -3,20 +3,19 @@
 
 #include "json.h"
 #include "mqttt.h"
+#include "services/item.h"
 
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef enum { SLOT_HEAD, SLOT_BODY, SLOT_ACCESSORY } EquipmentSlot;
-
 typedef struct EquippedItem {
   int32_t id;
   int32_t price;
-  EquipmentSlot slot;
+  ItemSlot slot;
   const char *code;
   const char *name;
-  const char *rarity;
-  const char *type;
+  ItemRarity rarity;
+  ItemType type;
 } EquippedItem;
 
 typedef struct Equipment {
