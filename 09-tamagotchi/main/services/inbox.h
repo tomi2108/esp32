@@ -11,12 +11,12 @@
 #define INBOX_SIZE 100
 
 typedef struct Message {
-  char id[16];
-  char content[512];
+  const char *id;
+  const char *content;
   bool is_read;
 } Message;
 
-int inbox_size(void);
+int inbox_get_size(void);
 int inbox_get_unread(void);
 void inbox_read(int index);
 void inbox_init(void);

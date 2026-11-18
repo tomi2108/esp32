@@ -46,14 +46,21 @@ static void decode_inventory_item(const t_json_value *body,
   out->code = json_value_string(json_object_get(body, "code"));
 }
 
+static t_json_value *inventory_body;
 static void inventory_refresh_task(void *arg) {
   Response *res = client_send_get(http_client, "/inventory");
   if (res == NULL || res->body == NULL)
     return;
 
   t_json_value *body = json_parse_buffer(res->body);
+  response_destroy(res);
+
   if (body == NULL)
     return;
+
+  if (inventory_body)
+    json_value_destroy(inventory_body);
+  inventory_body = body;
 
   equippables_size = 0;
   consumables_size = 0;

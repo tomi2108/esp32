@@ -25,7 +25,7 @@ static void select_message(void *context, int32_t index) {
 }
 
 static void render(Screen *self) {
-  int size = inbox_size();
+  int size = inbox_get_size();
   if (size == 0)
     return oled_write_text(&oled, 0, oled.height / 2 - 3, false,
                            "No hay mensajitos");
@@ -71,7 +71,7 @@ static void render(Screen *self) {
 static void update(Screen *self) {
   RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
   RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
-  int size = inbox_size();
+  int size = inbox_get_size();
   if (click == ROTARY_CLICK_DOUBLE) {
     screen_pop();
     return;

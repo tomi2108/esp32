@@ -7,14 +7,15 @@ char *topic = "/actions";
 void send_action(void *data) {
   MqttMessage *message = (MqttMessage *)data;
   mqtt_pub(mqtt_client, topic, *message);
+  free(message);
 }
 
 void action_send(t_json *body) {
   t_buffer *buffer = json_buffer(body);
   MqttMessage *message = malloc(sizeof(MqttMessage));
   message->buffer = buffer;
-  const char *type =
-      json_value_string(json_object_get(json_parse_buffer(buffer), "type"));
+  t_json_value *value = json_parse_buffer(buffer);
+  const char *type = json_value_string(json_object_get(value, "type"));
   task_start(type, send_action, message);
 }
 

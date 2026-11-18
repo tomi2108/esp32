@@ -7,13 +7,22 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+typedef enum { SLOT_HEAD, SLOT_BODY, SLOT_ACCESSORY } EquipmentSlot;
+
+typedef struct EquippedItem {
+  int32_t id;
+  int32_t price;
+  EquipmentSlot slot;
+  const char *code;
+  const char *name;
+  const char *rarity;
+  const char *type;
+} EquippedItem;
+
 typedef struct Equipment {
-  // TODO: not correct, but not used yet.
-  //  fix when adding equipabble assests to
-  //  pet display
-  int32_t head;
-  int32_t body;
-  int32_t accessory;
+  EquippedItem head;
+  EquippedItem body;
+  EquippedItem accessory;
 } Equipment;
 
 typedef enum {

@@ -1,4 +1,5 @@
 #include "inbox.h"
+#include "json.h"
 
 extern PassiveBuzzer buzzer;
 extern int wholenote;
@@ -6,17 +7,12 @@ extern MqttClient mqtt_client;
 extern HttpClient *http_client;
 
 Message inbox[INBOX_SIZE] = {0};
+int inbox_size = 0;
 
 Message inbox_get_message(int index) { return inbox[index]; }
 Message *inbox_get() { return inbox; }
 
-int inbox_size(void) {
-  int size = 0;
-  for (int i = 0; i < INBOX_SIZE; i++)
-    if (inbox[i].content[0] != '\0')
-      size++;
-  return size;
-}
+int inbox_get_size(void) { return inbox_size; }
 
 int inbox_get_unread(void) {
   int unread = 0;
@@ -26,60 +22,63 @@ int inbox_get_unread(void) {
   return unread;
 }
 
-void inbox_remove(int index) {
-  if (index < 0 || index >= INBOX_SIZE)
+static void inbox_remove(int index) {
+  Message *inbox = inbox_get();
+  int size = inbox_get_size();
+  if (index < 0 || index >= size)
     return;
-  inbox[index].content[0] = '\0';
+  for (int i = index; i < size - 1; i++)
+    inbox[i] = inbox[i + 1];
+  inbox_size--;
 }
 
 void inbox_add(Message message) {
   for (int i = INBOX_SIZE - 1; i > 0; i--)
     inbox[i] = inbox[i - 1];
   inbox[0] = message;
+  inbox_size++;
 }
 
 static void decode_message(const t_json_value *message, Message *out) {
   if (message == NULL || out == NULL)
     return;
 
-  const char *id = json_value_string(json_object_get(message, "id"));
-  const char *content = json_value_string(json_object_get(message, "content"));
+  out->id = json_value_string(json_object_get(message, "id"));
+  out->content = json_value_string(json_object_get(message, "content"));
   const char *read_at = json_value_string(json_object_get(message, "read_at"));
-
-  snprintf(out->id, sizeof(out->id), "%s", id != NULL ? id : "");
-  snprintf(out->content, sizeof(out->content), "%s",
-           content != NULL ? content : "");
-
   out->is_read = read_at != NULL;
 }
 
+static t_json_value *inbox_body;
 void inbox_fetch(void) {
   char path[32];
   snprintf(path, sizeof(path), "/inbox/%d", PLAYER_ID);
   Response *res = client_send_get(http_client, path);
+
   if (res == NULL)
     return;
-  if (res->status_code < 200 || res->status_code >= 300) {
-    response_destroy(res);
-    return;
-  }
 
-  t_json_value *inbox_res = json_parse_buffer(res->body);
-  if (inbox_res == NULL) {
-    response_destroy(res);
-    return;
-  }
-  memset(inbox, 0, sizeof(inbox));
-  int size = json_array_size(inbox_res);
-  if (size > INBOX_SIZE)
-    size = INBOX_SIZE;
-  for (int i = 0; i < size; i++) {
-    const t_json_value *message = json_array_get(inbox_res, i);
-    if (message != NULL)
-      decode_message(message, &inbox[i]);
-  }
-  json_value_destroy(inbox_res);
+  t_json_value *body = json_parse_buffer(res->body);
   response_destroy(res);
+
+  if (body == NULL)
+    return;
+
+  if (inbox_body)
+    json_value_destroy(inbox_body);
+  inbox_body = body;
+
+  inbox_size = 0;
+  int count = json_array_size(body);
+  if (count > INBOX_SIZE)
+    count = INBOX_SIZE;
+  for (int i = 0; i < inbox_size; i++) {
+    const t_json_value *message = json_array_get(body, i);
+    if (message != NULL) {
+      decode_message(message, &inbox[i]);
+      inbox_size++;
+    }
+  }
 }
 
 static void mark_as_read_task(void *arg) {
@@ -108,12 +107,13 @@ void inbox_read(int index) {
 
 static void message_recieved(MqttClient client, MqttMessage message) {
   t_json_value *body = json_parse_buffer(message.buffer);
-  if (body == NULL) {
-    mqtt_destroy_message(message);
+  mqtt_destroy_message(message);
+  if (body == NULL)
     return;
-  }
+
   const t_json_value *id = json_object_get(body, "id");
   const t_json_value *content = json_object_get(body, "content");
+
   if (id != NULL && content != NULL) {
     Message message_data = {0};
     decode_message(body, &message_data);
@@ -122,8 +122,6 @@ static void message_recieved(MqttClient client, MqttMessage message) {
       buzzer_play_melody(buzzer, wholenote, sound_notification());
     }
   }
-  json_value_destroy(body);
-  mqtt_destroy_message(message);
 }
 
 void inbox_init(void) {

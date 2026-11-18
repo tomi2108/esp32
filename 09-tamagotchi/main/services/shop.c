@@ -1,5 +1,6 @@
 #include "shop.h"
 #include "common/task.h"
+#include "response.h"
 #include "services/inventory.h"
 #include <stdint.h>
 #include <stdlib.h>
@@ -22,13 +23,21 @@ static void decode_item(const t_json_value *body, ShopItem *out) {
   out->rarity = json_value_string(json_object_get(body, "rarity"));
 }
 
+static t_json_value *shop_body;
 static void shop_refresh_task(void *arg) {
   Response *res = client_send_get(http_client, "/shop");
   if (res == NULL || res->body == NULL)
     return;
+
   t_json_value *body = json_parse_buffer(res->body);
+  response_destroy(res);
   if (body == NULL)
     return;
+
+  if (shop_body)
+    json_value_destroy(shop_body);
+  shop_body = body;
+
   shop_size = 0;
 
   const t_json_value *items = json_object_get(body, "items");
@@ -84,7 +93,8 @@ void shop_buy_task(void *args) {
   json_object_end(body);
 
   headers_add(http_client->headers, "Content-Type", "application/json");
-  client_send_post(http_client, json_buffer(body), "/shop");
+  Response *res = client_send_post(http_client, json_buffer(body), "/shop");
+  response_destroy(res);
   headers_remove(http_client->headers, "Content-Type");
   json_destroy(body);
 

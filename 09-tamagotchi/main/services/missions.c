@@ -38,15 +38,13 @@ static void missions_refresh_task(void *arg) {
     return;
 
   t_json_value *body = json_parse_buffer(res->body);
+  response_destroy(res);
+  if (body == NULL)
+    return;
 
   if (missions_body)
     json_value_destroy(missions_body);
   missions_body = body;
-
-  response_destroy(res);
-
-  if (body == NULL)
-    return;
 
   const t_json_value *missions = json_object_get(body, "missions");
   next_reset_at = json_value_string(json_object_get(body, "nextResetAt"));

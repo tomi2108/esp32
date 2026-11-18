@@ -1,4 +1,6 @@
 #include "games.h"
+#include "json.h"
+#include "response.h"
 
 extern HttpClient *http_client;
 
@@ -23,8 +25,12 @@ int32_t game_publish_score(char *game_code, int32_t score) {
   headers_remove(http_client->headers, "Content-Type");
 
   t_json_value *res_body = json_parse_buffer(res->body);
+  response_destroy(res);
+
   int32_t coins = 0;
   json_value_int(json_object_get(res_body, "coins"), &coins);
+  json_value_destroy(res_body);
+
   wallet_refresh_async();
   return coins;
 }
