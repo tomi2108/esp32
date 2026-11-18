@@ -19,6 +19,16 @@ int missions_get_size(MissionType type) {
   return type == MISSIONS_AUTOMATIC ? automatic_size : manual_size;
 }
 
+MissionType mission_type(const char *type) {
+  if (strcmp(type, "automatic") == 0) {
+    return MISSIONS_AUTOMATIC;
+  } else if (strcmp(type, "manual") == 0) {
+    return MISSIONS_MANUAL;
+  }
+
+  return MISSIONS_AUTOMATIC;
+}
+
 static void decode_mission_item(const t_json_value *body, Mission *out) {
   json_value_int(json_object_get(body, "id"), &out->id);
   json_value_int(json_object_get(body, "target"), &out->target);
@@ -27,8 +37,10 @@ static void decode_mission_item(const t_json_value *body, Mission *out) {
   out->code = json_value_string(json_object_get(body, "code"));
   out->title = json_value_string(json_object_get(body, "title"));
   out->description = json_value_string(json_object_get(body, "description"));
-  out->type = json_value_string(json_object_get(body, "type"));
+  const char *type = json_value_string(json_object_get(body, "type"));
   out->completed_at = json_value_string(json_object_get(body, "completed_at"));
+
+  out->type = mission_type(type);
 }
 
 static t_json_value *missions_body;
@@ -54,15 +66,15 @@ static void missions_refresh_task(void *arg) {
 
   int count = json_array_size(missions);
   for (int i = 0; i < count; i++) {
-    Mission item = {0};
-    decode_mission_item(json_array_get(missions, i), &item);
+    Mission mission = {0};
+    decode_mission_item(json_array_get(missions, i), &mission);
 
-    if (strcmp(item.type, "automatic") == 0) {
+    if (mission.type == MISSIONS_AUTOMATIC) {
       if (automatic_size < MAX_MISSIONS_SIZE)
-        automatic[automatic_size++] = item;
-    } else if (strcmp(item.type, "manual") == 0) {
+        automatic[automatic_size++] = mission;
+    } else if (mission.type == MISSIONS_MANUAL) {
       if (manual_size < MAX_MISSIONS_SIZE)
-        manual[manual_size++] = item;
+        manual[manual_size++] = mission;
     }
   }
   return;

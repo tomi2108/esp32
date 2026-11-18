@@ -11,4 +11,4 @@
 
 #include <stdlib.h>
 
-void inventory_view(InventoryCategory category);
+void inventory_view(ItemType type);

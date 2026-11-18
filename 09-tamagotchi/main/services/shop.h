@@ -5,6 +5,7 @@
 #include "env.h"
 #include "json.h"
 #include "response.h"
+#include "services/item.h"
 #include "services/wallet.h"
 
 #include <inttypes.h>
@@ -16,9 +17,9 @@
 typedef struct ShopItem {
   int32_t id;
   const char *name;
-  const char *type;
-  const char *slot;
-  const char *rarity;
+  ItemType type;
+  ItemSlot slot;
+  ItemRarity rarity;
   int32_t price;
   int32_t stock;
 } ShopItem;

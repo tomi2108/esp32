@@ -2,6 +2,7 @@
 #include "common/task.h"
 #include "response.h"
 #include "services/inventory.h"
+#include "services/item.h"
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -18,9 +19,13 @@ static void decode_item(const t_json_value *body, ShopItem *out) {
   json_value_int(json_object_get(body, "price"), &out->price);
   json_value_int(json_object_get(body, "stock"), &out->stock);
   out->name = json_value_string(json_object_get(body, "name"));
-  out->type = json_value_string(json_object_get(body, "type"));
-  out->slot = json_value_string(json_object_get(body, "slot"));
-  out->rarity = json_value_string(json_object_get(body, "rarity"));
+  const char *type = json_value_string(json_object_get(body, "type"));
+  const char *slot = json_value_string(json_object_get(body, "slot"));
+  const char *rarity = json_value_string(json_object_get(body, "rarity"));
+
+  out->type = item_type(type);
+  out->slot = item_slot(slot);
+  out->rarity = item_rarity(rarity);
 }
 
 static t_json_value *shop_body;

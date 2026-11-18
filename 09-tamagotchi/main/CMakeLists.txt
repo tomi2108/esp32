@@ -17,6 +17,7 @@ idf_component_register(
     "services/games.c"
     "services/inbox.c"
     "services/inventory.c"
+    "services/item.c"
     "services/missions.c"
     "services/shop.c"
     "services/state.c"

@@ -1,4 +1,5 @@
 #include "main_menu.h"
+#include "services/item.h"
 
 extern PassiveBuzzer buzzer;
 extern int wholenote;
@@ -16,13 +17,13 @@ Option main_menu_options[MAIN_MENU_LENGTH] = {
 static void on_select(void *ctx, int32_t value) {
   switch (value) {
   case 0:
-    inventory_view(INVENTORY_CONSUMABLE);
+    inventory_view(ITEM_CONSUMABLE);
     break;
   case 1:
-    inventory_view(INVENTORY_EQUIPPABLE);
+    inventory_view(ITEM_EQUIPPABLE);
     break;
   case 2:
-    inventory_view(INVENTORY_SEEDS);
+    inventory_view(ITEM_SEED);
     break;
   case 3:
     inbox_view();

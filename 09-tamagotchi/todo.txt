@@ -10,3 +10,4 @@ x 2026-11-16 2026-11-10 Borrar items del shop cuando se compran de manera optimi
 2026-11-16 Cementerio
 2026-11-17 optimize response frees
 2026-11-17 use enums where possible, specially in items
+2026-11-18 single mission view, progress and coins

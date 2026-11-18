@@ -20,9 +20,9 @@ static Menu inventory_menu = {
     .context = NULL,
 };
 
-static void update_options(InventoryCategory category) {
-  InventoryItem *items = inventory_get(category);
-  int size = inventory_get_size(category);
+static void update_options(ItemType type) {
+  InventoryItem *items = inventory_get(type);
+  int size = inventory_get_size(type);
 
   for (int i = 0; i < size; i++) {
     InventoryItem item = items[i];
@@ -30,7 +30,7 @@ static void update_options(InventoryCategory category) {
     snprintf(inventory_labels[i], sizeof(inventory_labels[i]), "%s",
              item.name ? item.name : "Item");
 
-    if (category != INVENTORY_EQUIPPABLE) {
+    if (type != ITEM_EQUIPPABLE) {
       snprintf(inventory_quantities[i], sizeof(inventory_quantities[i]),
                "x%" PRId32, item.quantity);
       inventory_decorations[i] = (OLEDMenuItemDecoration){
@@ -62,18 +62,18 @@ static void update_options(InventoryCategory category) {
 }
 
 static void render(Screen *self) {
-  InventoryCategory category = *(InventoryCategory *)self->context;
-  int size = inventory_get_size(category);
+  ItemType type = *(ItemType *)self->context;
+  int size = inventory_get_size(type);
 
   char *title = "";
-  switch (category) {
-  case INVENTORY_EQUIPPABLE:
+  switch (type) {
+  case ITEM_EQUIPPABLE:
     title = "Ropita";
     break;
-  case INVENTORY_CONSUMABLE:
+  case ITEM_CONSUMABLE:
     title = "Comida";
     break;
-  case INVENTORY_SEEDS:
+  case ITEM_SEED:
     title = "Semillas";
     break;
   }
@@ -100,11 +100,11 @@ static void render(Screen *self) {
 }
 
 static void update(Screen *self) {
-  InventoryCategory category = *(InventoryCategory *)self->context;
+  ItemType type = *(ItemType *)self->context;
 
   RotaryDirection direction = rotary_encoder_direction(&rotary_encoder);
   RotaryClick click = rotary_encoder_get_click(&rotary_encoder);
-  int size = inventory_get_size(category);
+  int size = inventory_get_size(type);
 
   if (click == ROTARY_CLICK_DOUBLE) {
     screen_pop();
@@ -123,8 +123,8 @@ static void update(Screen *self) {
   if (click == ROTARY_CLICK_SINGLE && inventory_menu.current >= 0 &&
       inventory_menu.current < size) {
     int32_t item_id = inventory_menu.options[inventory_menu.current].value;
-    inventory_use(category, item_id);
-    update_options(category);
+    inventory_use(type, item_id);
+    update_options(type);
   }
 }
 
@@ -133,10 +133,10 @@ Screen inventory_screen = {
     .update = update,
 };
 
-void inventory_view(InventoryCategory category) {
-  update_options(category);
-  InventoryCategory *ctx = malloc(sizeof(InventoryCategory));
-  *ctx = category;
+void inventory_view(ItemType type) {
+  update_options(type);
+  ItemType *ctx = malloc(sizeof(ItemType));
+  *ctx = type;
   inventory_screen.context = ctx;
   inventory_menu.current = 0;
   inventory_menu.selected = -1;

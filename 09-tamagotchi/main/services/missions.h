@@ -24,7 +24,7 @@ typedef struct {
   const char *code;
   const char *title;
   const char *description;
-  const char *type;
+  MissionType type;
   int32_t target;
   int32_t progress;
   int32_t reward_coins;

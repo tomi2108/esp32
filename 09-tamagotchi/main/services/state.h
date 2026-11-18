@@ -37,7 +37,7 @@ typedef enum {
 } PetSpecies;
 
 typedef struct State {
-  char name[32];
+  const char *name;
   PetStatus status;
   PetSpecies species;
   double energy;

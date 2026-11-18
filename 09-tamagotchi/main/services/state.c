@@ -24,13 +24,17 @@ PetStatus pet_status(const char *status) {
   return PET_IDLE;
 }
 
+static t_json_value *state_body;
 void update_state(MqttClient client, MqttMessage message) {
   t_json_value *new_state = json_parse_buffer(message.buffer);
+  mqtt_destroy_message(message);
 
-  if (new_state == NULL) {
-    mqtt_destroy_message(message);
+  if (new_state == NULL)
     return;
-  }
+
+  if (state_body)
+    json_value_destroy(state_body);
+  state_body = new_state;
 
   json_value_double(json_object_get(new_state, "energy"), &state.energy);
   json_value_double(json_object_get(new_state, "hunger"), &state.hunger);
@@ -41,18 +45,12 @@ void update_state(MqttClient client, MqttMessage message) {
   json_value_bool(json_object_get(new_state, "is_dead"), &state.is_dead);
 
   const char *status = json_value_string(json_object_get(new_state, "status"));
-  const char *name = json_value_string(json_object_get(new_state, "name"));
+  state.name = json_value_string(json_object_get(new_state, "name"));
   const char *species =
       json_value_string(json_object_get(new_state, "species"));
 
   state.status = pet_status(status);
   state.species = pet_species(species);
-
-  snprintf(state.name, sizeof(state.name), "%s",
-           name != NULL ? name : "Anonymous");
-
-  json_value_destroy(new_state);
-  mqtt_destroy_message(message);
 }
 
 State state_get(void) { return state; }
