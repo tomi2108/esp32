@@ -14,11 +14,13 @@ static int seeds_size = 0;
 
 InventoryItem *inventory_get(ItemType type) {
   switch (type) {
-  case ITEM_EQUIPPABLE:
+  case ITEM_TYPE_NONE:
+    return NULL;
+  case ITEM_TYPE_EQUIPPABLE:
     return equippables;
-  case ITEM_CONSUMABLE:
+  case ITEM_TYPE_CONSUMABLE:
     return consumables;
-  case ITEM_SEED:
+  case ITEM_TYPE_SEED:
     return seeds;
   };
 
@@ -27,11 +29,13 @@ InventoryItem *inventory_get(ItemType type) {
 
 int inventory_get_size(ItemType type) {
   switch (type) {
-  case ITEM_EQUIPPABLE:
+  case ITEM_TYPE_NONE:
+    return 0;
+  case ITEM_TYPE_EQUIPPABLE:
     return equippables_size;
-  case ITEM_CONSUMABLE:
+  case ITEM_TYPE_CONSUMABLE:
     return consumables_size;
-  case ITEM_SEED:
+  case ITEM_TYPE_SEED:
     return seeds_size;
   }
   return 0;
@@ -75,13 +79,13 @@ static void inventory_refresh_task(void *arg) {
     if (item.quantity <= 0)
       continue;
 
-    if (item.type == ITEM_EQUIPPABLE) {
+    if (item.type == ITEM_TYPE_EQUIPPABLE) {
       if (equippables_size < MAX_INVENTORY_SIZE)
         equippables[equippables_size++] = item;
-    } else if (item.type == ITEM_CONSUMABLE) {
+    } else if (item.type == ITEM_TYPE_CONSUMABLE) {
       if (consumables_size < MAX_INVENTORY_SIZE)
         consumables[consumables_size++] = item;
-    } else if (item.type == ITEM_SEED) {
+    } else if (item.type == ITEM_TYPE_SEED) {
       if (seeds_size < MAX_INVENTORY_SIZE)
         seeds[seeds_size++] = item;
     }
@@ -113,16 +117,16 @@ static void inventory_remove(ItemType type, int index) {
 
   for (int i = index; i < size - 1; i++)
     items[i] = items[i + 1];
-  if (type == ITEM_EQUIPPABLE)
+  if (type == ITEM_TYPE_EQUIPPABLE)
     equippables_size--;
-  if (type == ITEM_CONSUMABLE)
+  if (type == ITEM_TYPE_CONSUMABLE)
     consumables_size--;
-  if (type == ITEM_SEED)
+  if (type == ITEM_TYPE_SEED)
     seeds_size--;
 }
 
 void inventory_use(ItemType type, int32_t item_id) {
-  if (type == ITEM_SEED)
+  if (type == ITEM_TYPE_SEED)
     return;
 
   InventoryItem *items = inventory_get(type);
@@ -133,10 +137,10 @@ void inventory_use(ItemType type, int32_t item_id) {
 
   InventoryItem *item = &items[index];
 
-  if (type == ITEM_EQUIPPABLE) {
+  if (type == ITEM_TYPE_EQUIPPABLE) {
     action_equip(item_id);
     inventory_remove(type, index);
-  } else if (type == ITEM_CONSUMABLE) {
+  } else if (type == ITEM_TYPE_CONSUMABLE) {
     action_consume(item_id);
     item->quantity--;
     if (item->quantity <= 0)

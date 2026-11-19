@@ -137,6 +137,7 @@ Overlay talking_overlay = {.render = talking_render};
 void hide_talking(void *data) {
   vTaskDelay(pdMS_TO_TICKS(PHRASE_DURATION));
   overlay_remove(&talking_overlay);
+  free(data);
 }
 
 static TickType_t next_talking = 0;

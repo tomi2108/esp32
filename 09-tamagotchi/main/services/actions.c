@@ -5,19 +5,13 @@ extern MqttClient mqtt_client;
 char *topic = "/actions";
 
 void send_action(void *data) {
-  MqttMessage *message = (MqttMessage *)data;
-  mqtt_pub(mqtt_client, topic, *message);
-  free(message);
+  t_json *body = (t_json *)data;
+  MqttMessage message = {.buffer = json_buffer(body)};
+  mqtt_pub(mqtt_client, topic, message);
+  json_destroy(body);
 }
 
-void action_send(t_json *body) {
-  t_buffer *buffer = json_buffer(body);
-  MqttMessage *message = malloc(sizeof(MqttMessage));
-  message->buffer = buffer;
-  t_json_value *value = json_parse_buffer(buffer);
-  const char *type = json_value_string(json_object_get(value, "type"));
-  task_start(type, send_action, message);
-}
+void action_send(t_json *body) { task_start("action_send", send_action, body); }
 
 void action_sleep() {
   t_json *body = json_create();

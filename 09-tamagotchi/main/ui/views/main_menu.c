@@ -17,13 +17,13 @@ Option main_menu_options[MAIN_MENU_LENGTH] = {
 static void on_select(void *ctx, int32_t value) {
   switch (value) {
   case 0:
-    inventory_view(ITEM_CONSUMABLE);
+    inventory_view(ITEM_TYPE_CONSUMABLE);
     break;
   case 1:
-    inventory_view(ITEM_EQUIPPABLE);
+    inventory_view(ITEM_TYPE_EQUIPPABLE);
     break;
   case 2:
-    inventory_view(ITEM_SEED);
+    inventory_view(ITEM_TYPE_SEED);
     break;
   case 3:
     inbox_view();

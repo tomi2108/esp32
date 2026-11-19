@@ -3,9 +3,10 @@
 #include <string.h>
 
 typedef enum {
-  ITEM_EQUIPPABLE,
-  ITEM_CONSUMABLE,
-  ITEM_SEED,
+  ITEM_TYPE_NONE,
+  ITEM_TYPE_EQUIPPABLE,
+  ITEM_TYPE_CONSUMABLE,
+  ITEM_TYPE_SEED,
 } ItemType;
 
 typedef enum {
@@ -16,6 +17,7 @@ typedef enum {
 } ItemSlot;
 
 typedef enum {
+  ITEM_RARITY_NONE,
   ITEM_RARITY_COMMON,
   ITEM_RARITY_UNCOMMON,
   ITEM_RARITY_RARE,

@@ -84,6 +84,7 @@ void inbox_fetch(void) {
 static void mark_as_read_task(void *arg) {
   char *path = arg;
   client_send_patch(http_client, path);
+  free(path);
 }
 
 static void mark_as_read(const char *id) {
@@ -93,8 +94,7 @@ static void mark_as_read(const char *id) {
   if (path == NULL)
     return;
   snprintf(path, 128, "/message/%s/read?", id);
-  if (task_start("mark_as_read", mark_as_read_task, path) != 0)
-    free(path);
+  task_start("mark_as_read", mark_as_read_task, path);
 }
 
 void inbox_read(int index) {

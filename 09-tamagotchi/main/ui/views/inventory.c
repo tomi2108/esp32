@@ -30,7 +30,7 @@ static void update_options(ItemType type) {
     snprintf(inventory_labels[i], sizeof(inventory_labels[i]), "%s",
              item.name ? item.name : "Item");
 
-    if (type != ITEM_EQUIPPABLE) {
+    if (type != ITEM_TYPE_EQUIPPABLE) {
       snprintf(inventory_quantities[i], sizeof(inventory_quantities[i]),
                "x%" PRId32, item.quantity);
       inventory_decorations[i] = (OLEDMenuItemDecoration){
@@ -67,13 +67,16 @@ static void render(Screen *self) {
 
   char *title = "";
   switch (type) {
-  case ITEM_EQUIPPABLE:
+  case ITEM_TYPE_NONE:
+    title = "";
+    break;
+  case ITEM_TYPE_EQUIPPABLE:
     title = "Ropita";
     break;
-  case ITEM_CONSUMABLE:
+  case ITEM_TYPE_CONSUMABLE:
     title = "Comida";
     break;
-  case ITEM_SEED:
+  case ITEM_TYPE_SEED:
     title = "Semillas";
     break;
   }

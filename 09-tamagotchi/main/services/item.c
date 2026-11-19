@@ -1,6 +1,9 @@
 #include "item.h"
 
 ItemSlot item_slot(const char *slot) {
+  if (slot == NULL)
+    return ITEM_SLOT_NONE;
+
   if (strcmp(slot, "body") == 0)
     return ITEM_SLOT_BODY;
   else if (strcmp(slot, "head") == 0)
@@ -12,17 +15,23 @@ ItemSlot item_slot(const char *slot) {
 }
 
 ItemType item_type(const char *type) {
-  if (strcmp(type, "equippable") == 0)
-    return ITEM_EQUIPPABLE;
-  else if (strcmp(type, "consumable") == 0)
-    return ITEM_CONSUMABLE;
-  else if (strcmp(type, "seed") == 0)
-    return ITEM_SEED;
+  if (type == NULL)
+    return ITEM_TYPE_NONE;
 
-  return ITEM_CONSUMABLE;
+  if (strcmp(type, "equippable") == 0)
+    return ITEM_TYPE_EQUIPPABLE;
+  else if (strcmp(type, "consumable") == 0)
+    return ITEM_TYPE_CONSUMABLE;
+  else if (strcmp(type, "seed") == 0)
+    return ITEM_TYPE_SEED;
+
+  return ITEM_TYPE_NONE;
 };
 
 ItemRarity item_rarity(const char *rarity) {
+  if (rarity == NULL)
+    return ITEM_RARITY_NONE;
+
   if (strcmp(rarity, "common") == 0)
     return ITEM_RARITY_COMMON;
   else if (strcmp(rarity, "uncommon") == 0)
@@ -32,5 +41,5 @@ ItemRarity item_rarity(const char *rarity) {
   else if (strcmp(rarity, "legendary") == 0)
     return ITEM_RARITY_LEGENDARY;
 
-  return ITEM_RARITY_COMMON;
+  return ITEM_RARITY_NONE;
 };

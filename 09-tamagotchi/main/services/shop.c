@@ -99,8 +99,9 @@ void shop_buy_task(void *args) {
 
   headers_add(http_client->headers, "Content-Type", "application/json");
   Response *res = client_send_post(http_client, json_buffer(body), "/shop");
-  response_destroy(res);
   headers_remove(http_client->headers, "Content-Type");
+
+  response_destroy(res);
   json_destroy(body);
 
   shop_refresh_async();

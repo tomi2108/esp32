@@ -1,5 +1,6 @@
 #include "missions.h"
 #include "response.h"
+#include <stdlib.h>
 
 extern HttpClient *http_client;
 
@@ -105,11 +106,16 @@ void mission_complete_task(void *args) {
   json_object_end(body);
 
   headers_add(http_client->headers, "Content-Type", "application/json");
-  client_send_post(http_client, json_buffer(body), "/missions/complete");
+  Response *res =
+      client_send_post(http_client, json_buffer(body), "/missions/complete");
   headers_remove(http_client->headers, "Content-Type");
+
+  response_destroy(res);
   json_destroy(body);
+
   wallet_refresh_async();
   missions_refresh_async();
+  free(args);
 }
 
 void missions_complete(int32_t mission_id) {

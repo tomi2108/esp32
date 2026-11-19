@@ -37,9 +37,6 @@ static void task_wrapper(void *args) {
 
   xSemaphoreGive(tasks_mutex);
 
-  if (handler_args != NULL)
-    free(handler_args);
-
   vTaskDelete(NULL);
 }
 
@@ -114,7 +111,6 @@ int task_stop(const char *id) {
 
   Task *task = &tasks[index];
   TaskHandle_t handle = task->handle;
-  void *args = task->args;
 
   task->status = FINISHED;
   task->handle = NULL;
@@ -124,9 +120,6 @@ int task_stop(const char *id) {
 
   if (handle != NULL)
     vTaskDelete(handle);
-
-  if (args != NULL)
-    free(args);
 
   if (task->waiters == 0)
     *task = (Task){0};
