@@ -5,12 +5,14 @@
 #include "env.h"
 #include "json.h"
 #include "response.h"
+#include "services/inventory.h"
 #include "services/item.h"
 #include "services/wallet.h"
 
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define MAX_SHOP_SIZE 50
 

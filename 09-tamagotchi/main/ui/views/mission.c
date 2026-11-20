@@ -1,7 +1,4 @@
 #include "mission.h"
-#include "services/missions.h"
-#include "ui/screen.h"
-#include <stdint.h>
 
 extern PassiveBuzzer buzzer;
 extern OLED oled;
@@ -44,15 +41,30 @@ static void render(Screen *self) {
   int index = missions_find(ctx.type, ctx.id);
   Mission mission = missions[index];
 
+  int bar_y = oled.font.line_height * 4 + 4;
+
   oled_write_text(&oled, 0, 0, false, "%s", mission.title);
-  oled_write_text(&oled, 0, oled.font.line_height * 2, false, "%s",
+  oled_write_text(&oled, 0, oled.font.line_height + 2, false, "%s",
                   mission.description);
 
+  oled_draw_bitmap(&oled, oled.width - 20 - ICON_WIDTH, bar_y - ICON_HEIGHT / 2,
+                   ICON_WIDTH, ICON_HEIGHT, false,
+                   icons_rpg_coin_gold_currency_money_gp());
+  oled_write_text(&oled, oled.width - 20, bar_y, false, "%d",
+                  mission.reward_coins);
+
   if (ctx.type == MISSIONS_MANUAL) {
-    oled_write_text(&oled, 0, oled.height - 8, mission_menu.current == 0, "%s",
-                    missions_options[0].key);
-    oled_write_text(&oled, 80, oled.height - 8, mission_menu.current == 1, "%s",
-                    missions_options[1].key);
+    oled_write_text(&oled, 0, oled.height - oled.font.line_height,
+                    mission_menu.current == 0, "%s", missions_options[0].key);
+    oled_write_text(&oled, 80, oled.height - oled.font.line_height,
+                    mission_menu.current == 1, "%s", missions_options[1].key);
+  } else {
+    int bar_w = oled.width / 2 - ICON_WIDTH;
+    oled_draw_progress_bar(&oled, 0, bar_y, bar_w, 3,
+                           (double)mission.progress * 100 / mission.target,
+                           false);
+    oled_write_text(&oled, bar_w + 4, bar_y, false, "%02d/%02d",
+                    mission.progress, mission.target);
   }
 }
 

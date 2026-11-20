@@ -1,10 +1,4 @@
 #include "shop.h"
-#include "common/task.h"
-#include "response.h"
-#include "services/inventory.h"
-#include "services/item.h"
-#include <stdint.h>
-#include <stdlib.h>
 
 extern HttpClient *http_client;
 

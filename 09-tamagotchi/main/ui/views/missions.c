@@ -124,6 +124,7 @@ Screen missions_screen = {
 };
 
 void missions_view(MissionType type) {
+  missions_refresh_async();
   update_options(type);
   MissionType *ctx = malloc(sizeof(MissionType));
   *ctx = type;
