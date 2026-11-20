@@ -102,11 +102,11 @@ static int calculate_score(void) {
       if (board[row][col] != NONE)
         pieces++;
 
-  int score = 1000 - ((pieces - 5) * 200);
+  int score = 500 - ((pieces - 5) * 100);
   if (score < 0)
     score = 0;
-  if (score > 1000)
-    score = 1000;
+  if (score > 500)
+    score = 500;
   return score;
 }
 
