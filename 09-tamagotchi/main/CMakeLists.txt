@@ -14,6 +14,7 @@ idf_component_register(
     "games/snake.c"
     "games/tictactoe.c"
     "services/actions.c"
+    "services/effect.c"
     "services/games.c"
     "services/inbox.c"
     "services/inventory.c"

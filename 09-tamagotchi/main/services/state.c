@@ -1,6 +1,4 @@
 #include "state.h"
-#include "json.h"
-#include <string.h>
 
 static State state;
 
@@ -13,7 +11,6 @@ PetSpecies pet_species(const char *species) {
     return PET_DOG;
   if (strcmp(species, "rabbit") == 0)
     return PET_RABBIT;
-
   return PET_CAT;
 }
 
@@ -38,18 +35,7 @@ void decode_equipment(const t_json_value *body, EquippedItem *out) {
   out->rarity = item_rarity(rarity);
 }
 
-static t_json_value *state_body;
-void update_state(MqttClient client, MqttMessage message) {
-  t_json_value *new_state = json_parse_buffer(message.buffer);
-  mqtt_destroy_message(message);
-
-  if (new_state == NULL)
-    return;
-
-  if (state_body)
-    json_value_destroy(state_body);
-  state_body = new_state;
-
+void decode_state(t_json_value *new_state) {
   state.name = json_value_string(json_object_get(new_state, "name"));
   json_value_double(json_object_get(new_state, "energy"), &state.energy);
   json_value_double(json_object_get(new_state, "hunger"), &state.hunger);
@@ -74,6 +60,29 @@ void update_state(MqttClient client, MqttMessage message) {
   decode_equipment(body, &state.equipment.body);
   decode_equipment(head, &state.equipment.head);
   decode_equipment(accessory, &state.equipment.accessory);
+
+  const t_json_value *effects = json_object_get(new_state, "effects");
+  int effect_count = json_array_size(effects);
+  for (int i = 0; i < effect_count; i++) {
+    const t_json_value *effect = json_array_get(effects, i);
+    const char *type = json_value_string(json_object_get(effect, "type"));
+    state.effects[i] = effect_from_string(type);
+  }
+}
+
+static t_json_value *state_body;
+void update_state(MqttClient client, MqttMessage message) {
+  t_json_value *new_state = json_parse_buffer(message.buffer);
+  mqtt_destroy_message(message);
+
+  if (new_state == NULL)
+    return;
+
+  if (state_body)
+    json_value_destroy(state_body);
+  state_body = new_state;
+
+  decode_state(new_state);
 }
 
 State state_get(void) { return state; }

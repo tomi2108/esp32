@@ -1,8 +1,8 @@
-
 #pragma once
 
 #include "json.h"
 #include "mqttt.h"
+#include "services/effect.h"
 #include "services/item.h"
 
 #include <stdbool.h>
@@ -46,6 +46,7 @@ typedef struct State {
   double happiness;
   bool is_dead;
   Equipment equipment;
+  PetEffect effects[64];
 } State;
 
 void state_init(void);

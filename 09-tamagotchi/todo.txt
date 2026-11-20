@@ -11,3 +11,4 @@ x 2026-11-16 2026-11-10 Borrar items del shop cuando se compran de manera optimi
 x 2026-11-19 2026-11-17 optimize response frees
 x 2026-11-19 2026-11-17 use enums where possible, specially in items
 x 2026-11-20 2026-11-18 single mission view, progress and coins
+2026-11-20 Estado de salud
